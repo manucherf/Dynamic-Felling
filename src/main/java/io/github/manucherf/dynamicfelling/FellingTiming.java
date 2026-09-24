@@ -64,17 +64,8 @@ public final class FellingTiming {
         return swingsNeeded(player, axe, branch.getRadius(state));
     }
 
-    //swap shell with center branch
     public static float swingsToFell(Player player, BlockGetter level, BlockPos pos) {
-        BlockState state = level.getBlockState(pos);
-        if (state.getBlock() instanceof TrunkShellBlock shell) {
-            TrunkShellBlock.ShellMuse muse = shell.getMuse(level, state, pos);
-            if (muse == null) {
-                return 0.0F;
-            }
-            state = muse.state();
-        }
-        return swingsToFell(player, state);
+        return swingsToFell(player, level.getBlockState(trunkCenter(level, pos)));
     }
 
     public static int hitsToFell(float swings) {
@@ -144,4 +135,18 @@ public final class FellingTiming {
                 .map(holder -> stack.getEnchantmentLevel(holder))
                 .orElse(0);
     }
+
+
+    //find trunk center
+    public static BlockPos trunkCenter(BlockGetter level, BlockPos pos) {
+        BlockState state = level.getBlockState(pos);
+        if (state.getBlock() instanceof TrunkShellBlock shell) {
+            TrunkShellBlock.ShellMuse muse = shell.getMuse(level, state, pos);
+            if (muse != null) {
+                return muse.pos();
+            }
+        }
+        return pos;
+    }
+
 }

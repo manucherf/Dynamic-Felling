@@ -16,6 +16,8 @@ public class ChopTracker {
     private static BlockPos target;
     private static float swings;
     private static int ticks;
+    private static final int CENTER_CRACK_ID = -1712;
+    private static BlockPos center;
 
     private ChopTracker() {}
 
@@ -25,7 +27,9 @@ public class ChopTracker {
         BlockPos pos = chopTarget(minecraft);
         //topped chopping or switched blocks: start over
         if (pos == null || !pos.equals(target)) {
+            clearCenterCrack(minecraft);
             target = pos;
+            center = pos == null ? null : FellingTiming.trunkCenter(minecraft.level, pos);
             ticks = 0;
             if (target != null) {
                 //fix crack flash
@@ -63,6 +67,10 @@ public class ChopTracker {
         int hits = FellingTiming.hitsLanded(ticks);
         int stage = hits == 0 ? -1 : Math.min(9, Mth.ceil(hits * 10.0F / FellingTiming.hitsToFell(swings)) - 1);
         level.destroyBlockProgress(player.getId(), target, stage);
+        //draw crack on center
+        if (!center.equals(target)) {
+            level.destroyBlockProgress(CENTER_CRACK_ID, center, stage);
+        }
     }
 
     //placeholder, later replace this with cracks, sound and particles.
@@ -72,6 +80,12 @@ public class ChopTracker {
         minecraft.player.displayClientMessage(Component.literal(text), true);
     }
 
+    //clean up when crack stops
+    private static void clearCenterCrack(Minecraft minecraft) {
+        if (center != null && minecraft.level != null) {
+            minecraft.level.destroyBlockProgress(CENTER_CRACK_ID, center, -1);
+        }
+    }
 
 
 
