@@ -28,6 +28,14 @@ sourceSets.main.resources {
 
 repositories {
     // Add here additional repositories if required by some of the dependencies below.
+    maven {
+        url = 'https://api.modrinth.com/maven'
+        content { includeGroup 'maven.modrinth' }
+    }
+    maven {
+        url = 'https://maven.kosmx.dev/'
+        content { includeGroup 'dev.kosmx.player-anim' }
+    }
 }
 
 base {
@@ -137,6 +145,8 @@ dependencies {
     // For more info:
     // http://www.gradle.org/docs/current/userguide/artifact_dependencies_tutorial.html
     // http://www.gradle.org/docs/current/userguide/dependency_management.html
+    compileOnly "maven.modrinth:dynamictrees:G4uJ0UA0"
+    localRuntime "maven.modrinth:dynamictrees:G4uJ0UA0"
 }
 
 // This block of code expands all declared replace properties in the specified resource targets.
