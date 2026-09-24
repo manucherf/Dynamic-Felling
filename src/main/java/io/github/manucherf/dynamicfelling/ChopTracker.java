@@ -1,9 +1,11 @@
 package io.github.manucherf.dynamicfelling;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.util.Mth;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
@@ -25,9 +27,14 @@ public class ChopTracker {
         if (pos == null || !pos.equals(target)) {
             target = pos;
             ticks = 0;
+            if (target != null) {
+                //fix crack flash
+                updateCracks(minecraft);
+            }
             return;
         }
         ticks++;
+        updateCracks(minecraft);
         if (FellingTiming.isHitTick(ticks)) {
             onHit(minecraft);
         }
@@ -44,6 +51,18 @@ public class ChopTracker {
         }
         swings = FellingTiming.swingsToFell(player, minecraft.level, hit.getBlockPos());
         return swings > 0.0F ? hit.getBlockPos() : null;
+    }
+
+    private static void updateCracks(Minecraft minecraft) {
+        //crack updates
+        LocalPlayer player = minecraft.player;
+        ClientLevel level = minecraft.level;
+        if (player == null || level == null) {
+            return;
+        }
+        int hits = FellingTiming.hitsLanded(ticks);
+        int stage = hits == 0 ? -1 : Math.min(9, Mth.ceil(hits * 10.0F / FellingTiming.hitsToFell(swings)) - 1);
+        level.destroyBlockProgress(player.getId(), target, stage);
     }
 
     //placeholder, later replace this with cracks, sound and particles.
