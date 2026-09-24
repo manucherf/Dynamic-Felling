@@ -5,13 +5,19 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.resources.sounds.SoundInstance;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.particles.BlockParticleOption;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.client.event.InputEvent;
 import net.neoforged.neoforge.client.event.sound.PlaySoundEvent;
 
 import java.util.Locale;
@@ -23,6 +29,7 @@ public class ChopTracker {
     private static final int CENTER_CRACK_ID = -1712;
     private static BlockPos center;
     private static final int WOOSH_LEAD_TICKS = 6;
+    private static final int SWING_LEAD_TICKS = 3;
 
     private ChopTracker() {}
 
@@ -50,15 +57,25 @@ public class ChopTracker {
         if (FellingTiming.isHitTick(ticks + WOOSH_LEAD_TICKS)) {
             playWoosh(minecraft);
         }
+
+        //only 1 swing
+        if (FellingTiming.isHitTick(ticks + SWING_LEAD_TICKS) && minecraft.player != null) {
+            minecraft.player.swing(InteractionHand.MAIN_HAND);
+        }
     }
 
-    //trunk block being chopped right now, or null if the player isn't chopping one.
+    //is crosshair on mineable trunk?
     private static BlockPos chopTarget(Minecraft minecraft) {
+        if (minecraft.gameMode == null || !minecraft.gameMode.isDestroying()) {
+            return null;
+        }
+        return trunkInSight(minecraft);
+    }
+
+    //am I mining it?
+    private static BlockPos trunkInSight(Minecraft minecraft) {
         LocalPlayer player = minecraft.player;
-        if (player == null || minecraft.level == null || minecraft.gameMode == null
-                || !minecraft.gameMode.isDestroying()
-                || !(minecraft.hitResult instanceof BlockHitResult hit)
-                || hit.getType() != HitResult.Type.BLOCK) {
+        if (player == null || minecraft.level == null || !(minecraft.hitResult instanceof BlockHitResult hit) || hit.getType() != HitResult.Type.BLOCK) {
             return null;
         }
         swings = FellingTiming.swingsToFell(player, minecraft.level, hit.getBlockPos());
@@ -93,6 +110,8 @@ public class ChopTracker {
         }
         level.playLocalSound(target, FellingSounds.CHOP.get(), SoundSource.BLOCKS,
                 1.0F, 0.9F + level.random.nextFloat() * 0.2F, false);
+
+        spawnChips(minecraft, level);
     }
 
     //clean up when crack stops
@@ -119,6 +138,13 @@ public class ChopTracker {
         }
     }
 
+    //only left click
+    static void onInteraction(InputEvent.InteractionKeyMappingTriggered event) {
+        if (event.isAttack() && trunkInSight(Minecraft.getInstance()) != null) {
+            event.setSwingHand(false);
+        }
+    }
+
     //play woosh
     private static void playWoosh(Minecraft minecraft) {
         LocalPlayer player = minecraft.player;
@@ -128,6 +154,20 @@ public class ChopTracker {
         }
         level.playLocalSound(player.getX(), player.getEyeY(), player.getZ(), FellingSounds.WOOSH.get(),
                 SoundSource.PLAYERS, 0.6F, 0.9F + level.random.nextFloat() * 0.2F, false);
+    }
+
+
+    //wood chips
+    private static void spawnChips(Minecraft minecraft, ClientLevel level) {
+        if (!(minecraft.hitResult instanceof BlockHitResult hit)) {
+            return;
+        }
+        BlockParticleOption chip = new BlockParticleOption(ParticleTypes.BLOCK, level.getBlockState(center));
+        Direction face = hit.getDirection();
+        Vec3 point = hit.getLocation().add(face.getStepX() * 0.05, face.getStepY() * 0.05, face.getStepZ() * 0.05);
+        for (int i = 0; i < 8; i++) {
+            level.addParticle(chip, point.x, point.y, point.z, face.getStepX(), 0.5, face.getStepZ());
+        }
     }
 
 }
