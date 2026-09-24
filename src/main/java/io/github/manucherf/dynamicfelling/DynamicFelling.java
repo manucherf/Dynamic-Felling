@@ -7,13 +7,15 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.neoforge.common.NeoForge;
 import org.slf4j.Logger;
+import net.neoforged.bus.api.IEventBus;
 
 @Mod(DynamicFelling.MODID)
 public final class DynamicFelling {
     public static final String MODID = "dynamicfelling";
     public static final Logger LOGGER = LogUtils.getLogger();
 
-    public DynamicFelling(ModContainer container) {
+    public DynamicFelling(IEventBus modBus, ModContainer container) {
+        FellingSounds.SOUNDS.register(modBus);
         container.registerConfig(ModConfig.Type.SERVER, FellingConfig.SPEC);
         NeoForge.EVENT_BUS.addListener(EventPriority.LOWEST, FellingTiming::onBreakSpeed);
     }

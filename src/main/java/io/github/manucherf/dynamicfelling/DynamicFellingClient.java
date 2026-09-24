@@ -12,5 +12,6 @@ public final class DynamicFellingClient {
     public DynamicFellingClient(ModContainer container) {
         container.registerExtensionPoint(IConfigScreenFactory.class, ConfigurationScreen::new);
         NeoForge.EVENT_BUS.addListener(ChopTracker::onClientTick);
+        NeoForge.EVENT_BUS.addListener(ChopTracker::onPlaySound);
     }
 }

@@ -1,0 +1,24 @@
+{
+  "chop": {
+    "subtitle": "subtitles.dynamicfelling.chop",
+    "sounds": [
+      "dynamicfelling:chop/chop1",
+      "dynamicfelling:chop/chop2",
+      "dynamicfelling:chop/chop3",
+      "dynamicfelling:chop/chop4",
+      "dynamicfelling:chop/chop5",
+      "dynamicfelling:chop/chop6"
+    ]
+  },
+  "woosh": {
+    "subtitle": "subtitles.dynamicfelling.woosh",
+    "sounds": [
+      "dynamicfelling:woosh/woosh1",
+      "dynamicfelling:woosh/woosh2",
+      "dynamicfelling:woosh/woosh3",
+      "dynamicfelling:woosh/woosh4",
+      "dynamicfelling:woosh/woosh5",
+      "dynamicfelling:woosh/woosh6"
+    ]
+  }
+}

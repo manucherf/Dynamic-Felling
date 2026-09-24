@@ -3,12 +3,16 @@ package io.github.manucherf.dynamicfelling;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.resources.sounds.SoundInstance;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
+import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.client.event.sound.PlaySoundEvent;
 
 import java.util.Locale;
 
@@ -18,6 +22,7 @@ public class ChopTracker {
     private static int ticks;
     private static final int CENTER_CRACK_ID = -1712;
     private static BlockPos center;
+    private static final int WOOSH_LEAD_TICKS = 6;
 
     private ChopTracker() {}
 
@@ -41,6 +46,9 @@ public class ChopTracker {
         updateCracks(minecraft);
         if (FellingTiming.isHitTick(ticks)) {
             onHit(minecraft);
+        }
+        if (FellingTiming.isHitTick(ticks + WOOSH_LEAD_TICKS)) {
+            playWoosh(minecraft);
         }
     }
 
@@ -78,6 +86,13 @@ public class ChopTracker {
         String text = String.format(Locale.ROOT, "Hit %d of %d",
                 FellingTiming.hitsLanded(ticks), FellingTiming.hitsToFell(swings));
         minecraft.player.displayClientMessage(Component.literal(text), true);
+        LocalPlayer player = minecraft.player;
+        ClientLevel level = minecraft.level;
+        if (player == null || level == null) {
+            return;
+        }
+        level.playLocalSound(target, FellingSounds.CHOP.get(), SoundSource.BLOCKS,
+                1.0F, 0.9F + level.random.nextFloat() * 0.2F, false);
     }
 
     //clean up when crack stops
@@ -87,6 +102,32 @@ public class ChopTracker {
         }
     }
 
+    //mute default chop
+    static void onPlaySound(PlaySoundEvent event) {
+        SoundInstance sound = event.getSound();
+        Minecraft minecraft = Minecraft.getInstance();
+        if (sound == null || minecraft.level == null || minecraft.player == null) {
+            return;
+        }
+        BlockPos pos = BlockPos.containing(sound.getX(), sound.getY(), sound.getZ());
+        if (!pos.equals(chopTarget(minecraft))) {
+            return;
+        }
+        SoundType type = minecraft.level.getBlockState(pos).getSoundType(minecraft.level, pos, minecraft.player);
+        if (sound.getLocation().equals(type.getHitSound().getLocation())) {
+            event.setSound(null);
+        }
+    }
 
+    //play woosh
+    private static void playWoosh(Minecraft minecraft) {
+        LocalPlayer player = minecraft.player;
+        ClientLevel level = minecraft.level;
+        if (player == null || level == null) {
+            return;
+        }
+        level.playLocalSound(player.getX(), player.getEyeY(), player.getZ(), FellingSounds.WOOSH.get(),
+                SoundSource.PLAYERS, 0.6F, 0.9F + level.random.nextFloat() * 0.2F, false);
+    }
 
 }
