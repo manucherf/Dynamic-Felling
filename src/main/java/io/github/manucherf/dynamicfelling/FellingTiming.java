@@ -25,10 +25,6 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 public final class FellingTiming {
     public static final int FIRST_HIT_TICKS = 8;
     public static final int TICKS_PER_SWING = 20;
-
-    private static final float WOODEN_AXE_SWINGS = 10.0F;
-    private static final float SWINGS_SAVED_PER_TIER = 1.0F;
-    private static final float SWINGS_SAVED_PER_EFFICIENCY = 0.5F;
     private static final float ONE_BLOCK_RADIUS = 8.0F;
 
     private FellingTiming() {}
@@ -88,10 +84,12 @@ public final class FellingTiming {
     //swings needed for one wide, scaled by width
     public static float swingsNeeded(Player player, ItemStack axe, int radius) {
         //swing math
-        float forOneBlock = WOODEN_AXE_SWINGS
-                - tierLevel(axe) * SWINGS_SAVED_PER_TIER
-                - efficiency(player, axe) * SWINGS_SAVED_PER_EFFICIENCY;
-        return Math.max(1.0F, forOneBlock * radius / ONE_BLOCK_RADIUS);
+        float forOneBlock = FellingConfig.WOODEN_AXE_SWINGS.get().floatValue()
+                - tierLevel(axe) * FellingConfig.SWINGS_SAVED_PER_TIER.get().floatValue()
+                - efficiency(player, axe) * FellingConfig.SWINGS_SAVED_PER_EFFICIENCY.get().floatValue();
+        float swings = Math.max(1.0F, forOneBlock * radius / ONE_BLOCK_RADIUS);
+        int max = FellingConfig.MAX_SWINGS.get();
+        return max > 0 ? Math.min(swings, max) : swings;
     }
 
     public static boolean isAxe(ItemStack stack) {

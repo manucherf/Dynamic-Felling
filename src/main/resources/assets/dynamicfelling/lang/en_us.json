@@ -1,4 +1,9 @@
 {
   "subtitles.dynamicfelling.chop": "Axe chops",
-  "subtitles.dynamicfelling.woosh": "Axe swings"
+  "subtitles.dynamicfelling.woosh": "Axe swings",
+  "dynamicfelling.configuration.excludedTools": "Excluded tools",
+  "dynamicfelling.configuration.woodenAxeSwings": "Wooden axe swings",
+  "dynamicfelling.configuration.swingsSavedPerTier": "Swings saved per tier",
+  "dynamicfelling.configuration.swingsSavedPerEfficiency": "Swings saved per Efficiency level",
+  "dynamicfelling.configuration.maxSwings": "Max swings"
 }
