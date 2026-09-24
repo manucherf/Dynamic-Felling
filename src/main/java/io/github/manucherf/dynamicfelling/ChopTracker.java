@@ -25,7 +25,7 @@ import java.util.Locale;
 public class ChopTracker {
     private static BlockPos target;
     private static float swings;
-    private static int ticks;
+    private static float time;
     private static final int CENTER_CRACK_ID = -1712;
     private static BlockPos center;
     private static final int WOOSH_LEAD_TICKS = 6;
@@ -42,27 +42,31 @@ public class ChopTracker {
             clearCenterCrack(minecraft);
             target = pos;
             center = pos == null ? null : FellingTiming.trunkCenter(minecraft.level, pos);
-            ticks = 0;
+            time = 0.0F;
             if (target != null) {
                 //fix crack flash
                 updateCracks(minecraft);
             }
             return;
         }
-        ticks++;
+
+        float before = time;
+        time += FellingTiming.pace(minecraft.player);
         updateCracks(minecraft);
-        if (FellingTiming.isHitTick(ticks)) {
+        if (crossed(before, time, 0)) {
             onHit(minecraft);
-        }
-        if (FellingTiming.isHitTick(ticks + WOOSH_LEAD_TICKS)) {
-            playWoosh(minecraft);
         }
 
         //only 1 swing
-        if (FellingTiming.isHitTick(ticks + SWING_LEAD_TICKS) && minecraft.player != null) {
+        if (crossed(before, time, SWING_LEAD_TICKS) && minecraft.player != null) {
             minecraft.player.swing(InteractionHand.MAIN_HAND);
         }
+
+        if (crossed(before, time, WOOSH_LEAD_TICKS)) {
+            playWoosh(minecraft);
+        }
     }
+
 
     //is crosshair on mineable trunk?
     private static BlockPos chopTarget(Minecraft minecraft) {
@@ -89,7 +93,7 @@ public class ChopTracker {
         if (player == null || level == null) {
             return;
         }
-        int hits = FellingTiming.hitsLanded(ticks);
+        int hits = FellingTiming.hitsLanded(time);
         int stage = hits == 0 ? -1 : Math.min(9, Mth.ceil(hits * 10.0F / FellingTiming.hitsToFell(swings)) - 1);
         level.destroyBlockProgress(player.getId(), target, stage);
         //draw crack on center
@@ -101,7 +105,7 @@ public class ChopTracker {
     //placeholder, later replace this with cracks, sound and particles.
     private static void onHit(Minecraft minecraft) {
         String text = String.format(Locale.ROOT, "Hit %d of %d",
-                FellingTiming.hitsLanded(ticks), FellingTiming.hitsToFell(swings));
+                FellingTiming.hitsLanded(time), FellingTiming.hitsToFell(swings));
         minecraft.player.displayClientMessage(Component.literal(text), true);
         LocalPlayer player = minecraft.player;
         ClientLevel level = minecraft.level;
@@ -168,6 +172,11 @@ public class ChopTracker {
         for (int i = 0; i < 8; i++) {
             level.addParticle(chip, point.x, point.y, point.z, face.getStepX(), 0.5, face.getStepZ());
         }
+    }
+
+    //did I pass a hit since last tick
+    private static boolean crossed(float before, float after, int lead) {
+        return FellingTiming.hitsLanded(after + lead) > FellingTiming.hitsLanded(before + lead);
     }
 
 }

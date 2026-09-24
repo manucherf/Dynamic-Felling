@@ -10,6 +10,9 @@ import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.tags.TagKey;
 import net.minecraft.util.Mth;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffectUtil;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.ItemStack;
@@ -47,7 +50,7 @@ public final class FellingTiming {
         }
         float divisor = !state.requiresCorrectToolForDrops() || player.hasCorrectToolForDrops(state, player.level(), pos) ? 30.0F : 100.0F;
         float progressPerTick = 1.0F / (breakTick(swings) - 0.5F);
-        event.setNewSpeed(progressPerTick * hardness * divisor);
+        event.setNewSpeed(progressPerTick * pace(player) * hardness * divisor);
     }
 
     //returns 0 when block or tool isn't a handled one
@@ -73,12 +76,9 @@ public final class FellingTiming {
         return FIRST_HIT_TICKS + (hitsToFell(swings) - 1) * TICKS_PER_SWING;
     }
 
-    public static boolean isHitTick(int ticks) {
-        return ticks >= FIRST_HIT_TICKS && (ticks - FIRST_HIT_TICKS) % TICKS_PER_SWING == 0;
-    }
 
-    public static int hitsLanded(int ticks) {
-        return ticks < FIRST_HIT_TICKS ? 0 : 1 + (ticks - FIRST_HIT_TICKS) / TICKS_PER_SWING;
+    public static int hitsLanded(float ticks) {
+        return ticks < FIRST_HIT_TICKS ? 0 : 1 + (int) ((ticks - FIRST_HIT_TICKS) / TICKS_PER_SWING);
     }
 
     //swings needed for one wide, scaled by width
@@ -145,6 +145,25 @@ public final class FellingTiming {
             }
         }
         return pos;
+    }
+
+
+    //haste/fatigue
+    public static float pace(Player player) {
+        float pace = 1.0F;
+        if (MobEffectUtil.hasDigSpeed(player)) {
+            pace *= 1.0F + (MobEffectUtil.getDigSpeedAmplification(player) + 1) * 0.2F;
+        }
+        MobEffectInstance fatigue = player.getEffect(MobEffects.DIG_SLOWDOWN);
+        if (fatigue != null) {
+            pace *= switch (fatigue.getAmplifier()) {
+                case 0 -> 0.3F;
+                case 1 -> 0.09F;
+                case 2 -> 0.0027F;
+                default -> 8.1E-4F;
+            };
+        }
+        return pace;
     }
 
 }
