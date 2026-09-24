@@ -7,11 +7,12 @@ import net.neoforged.neoforge.common.NeoForge;
 import org.slf4j.Logger;
 
 @Mod(DynamicFelling.MODID)
-public class DynamicFelling {
+public final class DynamicFelling {
     public static final String MODID = "dynamicfelling";
     public static final Logger LOGGER = LogUtils.getLogger();
 
-    public DynamicFelling(IEventBus modEventBus, ModContainer modContainer) {
+    public DynamicFelling(ModContainer modContainer) {
+        container.registerConfig(ModConfig.Type.SERVER, FellingConfig.SPEC)
         NeoForge.EVENT_BUS.addListener(EventPriority.LOWEST, FellingTiming::onBreakSpeed);
 
 
