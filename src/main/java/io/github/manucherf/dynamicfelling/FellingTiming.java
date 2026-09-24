@@ -3,12 +3,20 @@ package io.github.manucherf.dynamicfelling;
 import com.dtteam.dynamictrees.block.branch.BasicRootsBlock;
 import com.dtteam.dynamictrees.block.branch.BranchBlock;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.ItemTags;
+import net.minecraft.tags.TagKey;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Tier;
+import net.minecraft.world.item.TieredItem;
+import net.minecraft.world.item.enchantment.EnchantmentHelper;
+import net.minecraft.world.item.enchantment.Enchantments;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 
@@ -66,5 +74,39 @@ public final class FellingTiming {
         return !stack.isEmpty()
                 && !FellingConfig.isExcluded(stack)
                 && (stack.getItem() instanceof AxeItem || stack.is(ItemTags.AXES));
+    }
+
+    private static int tierLevel(ItemStack stack) {
+        //get axe material
+        if (!(stack.getItem() instanceof TieredItem tiered)) {
+            return 0;
+        }
+        Tier tier = tiered.getTier();
+        TagKey<Block> incorrect = tier.getIncorrectBlocksForDrops();
+        if (incorrect.equals(BlockTags.INCORRECT_FOR_NETHERITE_TOOL)) {
+            return 4;
+        }
+        if (incorrect.equals(BlockTags.INCORRECT_FOR_DIAMOND_TOOL)) {
+            return 3;
+        }
+        if (incorrect.equals(BlockTags.INCORRECT_FOR_IRON_TOOL)) {
+            return 2;
+        }
+        if (incorrect.equals(BlockTags.INCORRECT_FOR_STONE_TOOL)) {
+            return 1;
+        }
+        if (incorrect.equals(BlockTags.INCORRECT_FOR_WOODEN_TOOL) || incorrect.equals(BlockTags.INCORRECT_FOR_GOLD_TOOL)) {
+            return 0;
+        }
+        float speed = tier.getSpeed();
+        return speed <= 2.0F ? 0 : speed <= 4.0F ? 1 : speed <= 6.0F ? 2 : speed <= 8.0F ? 3 : 4;
+    }
+
+    private static int efficiency(Player player, ItemStack stack) {
+        //axe efficiency level
+        return player.level().registryAccess().registry(Registries.ENCHANTMENT)
+                .flatMap(registry -> registry.getHolder(Enchantments.EFFICIENCY))
+                .map(holder -> EnchantmentHelper.getItemEnchantmentLevel(holder, stack))
+                .orElse(0);
     }
 }
