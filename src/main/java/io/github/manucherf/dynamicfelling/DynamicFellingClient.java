@@ -14,5 +14,6 @@ public final class DynamicFellingClient {
         NeoForge.EVENT_BUS.addListener(ChopTracker::onClientTick);
         NeoForge.EVENT_BUS.addListener(ChopTracker::onPlaySound);
         NeoForge.EVENT_BUS.addListener(ChopTracker::onInteraction);
+        ChopAnimation.register();
     }
 }

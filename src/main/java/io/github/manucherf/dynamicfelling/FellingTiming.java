@@ -26,7 +26,7 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 
 
 public final class FellingTiming {
-    public static final int FIRST_HIT_TICKS = 8;
+    public static final int FIRST_HIT_TICKS = 11;
     public static final int TICKS_PER_SWING = 20;
     private static final float ONE_BLOCK_RADIUS = 8.0F;
 

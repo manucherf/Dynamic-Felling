@@ -147,6 +147,7 @@ dependencies {
     // http://www.gradle.org/docs/current/userguide/dependency_management.html
     compileOnly "maven.modrinth:dynamictrees:G4uJ0UA0"
     localRuntime "maven.modrinth:dynamictrees:G4uJ0UA0"
+    implementation "dev.kosmx.player-anim:player-animation-lib-forge:2.0.4+1.21.1"
 }
 
 // This block of code expands all declared replace properties in the specified resource targets.

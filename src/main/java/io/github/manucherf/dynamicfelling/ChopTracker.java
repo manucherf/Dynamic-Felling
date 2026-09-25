@@ -47,11 +47,23 @@ public class ChopTracker {
                 //fix crack flash
                 updateCracks(minecraft);
             }
+
+            //chop animation
+            if (minecraft.player != null) {
+                if (target != null) {
+                    ChopAnimation.start(minecraft.player);
+                } else {
+                    ChopAnimation.stop(minecraft.player);
+                }
+            }
             return;
         }
 
         float before = time;
-        time += FellingTiming.pace(minecraft.player);
+        float pace = FellingTiming.pace(minecraft.player);
+        time += pace;
+        ChopAnimation.setPace(minecraft.player, pace);
+        
         updateCracks(minecraft);
         if (crossed(before, time, 0)) {
             onHit(minecraft);
