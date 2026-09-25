@@ -16,7 +16,10 @@ public final class DynamicFelling {
 
     public DynamicFelling(IEventBus modBus, ModContainer container) {
         FellingSounds.SOUNDS.register(modBus);
+        modBus.addListener(FellingNetwork::register);
         container.registerConfig(ModConfig.Type.SERVER, FellingConfig.SPEC);
         NeoForge.EVENT_BUS.addListener(EventPriority.LOWEST, FellingTiming::onBreakSpeed);
+        NeoForge.EVENT_BUS.addListener(FellingNetwork::onStartTracking);
+        NeoForge.EVENT_BUS.addListener(FellingNetwork::onLoggedOut);
     }
 }

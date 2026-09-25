@@ -19,6 +19,7 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.InputEvent;
 import net.neoforged.neoforge.client.event.sound.PlaySoundEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.Locale;
 
@@ -26,10 +27,12 @@ public class ChopTracker {
     private static BlockPos target;
     private static float swings;
     private static float time;
+    private static boolean chopping;
+    private static float sentPace = 1.0F;
     private static final int CENTER_CRACK_ID = -1712;
     private static BlockPos center;
     private static final int WOOSH_LEAD_TICKS = 6;
-    private static final int SWING_LEAD_TICKS = 3;
+    static final int SWING_LEAD_TICKS = 3;
 
     private ChopTracker() {}
 
@@ -56,6 +59,13 @@ public class ChopTracker {
                     ChopAnimation.stop(minecraft.player);
                 }
             }
+
+            if ((target != null) != chopping) {
+                //run every tick when not chopping
+                chopping = target != null;
+                sentPace = 1.0F;
+                PacketDistributor.sendToServer(new ChopStatePayload(chopping, sentPace));
+            }
             return;
         }
 
@@ -63,7 +73,13 @@ public class ChopTracker {
         float pace = FellingTiming.pace(minecraft.player);
         time += pace;
         ChopAnimation.setPace(minecraft.player, pace);
-        
+
+        //only update when pace modified
+        if (pace != sentPace) {
+            sentPace = pace;
+            PacketDistributor.sendToServer(new ChopStatePayload(true, pace));
+        }
+
         updateCracks(minecraft);
         if (crossed(before, time, 0)) {
             onHit(minecraft);
