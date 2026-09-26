@@ -2,6 +2,7 @@ package io.github.manucherf.dynamicfelling;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.player.Input;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.resources.sounds.SoundInstance;
 import net.minecraft.core.BlockPos;
@@ -18,6 +19,7 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.InputEvent;
+import net.neoforged.neoforge.client.event.MovementInputUpdateEvent;
 import net.neoforged.neoforge.client.event.RenderHandEvent;
 import net.neoforged.neoforge.client.event.sound.PlaySoundEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -36,6 +38,7 @@ public class ChopTracker {
     private static BlockPos center;
     private static final int WOOSH_LEAD_TICKS = 6;
     static final int SWING_LEAD_TICKS = 3;
+    private static final float CHOP_MOVE_SPEED = 0.15F;
 
     private ChopTracker() {}
 
@@ -235,5 +238,16 @@ public class ChopTracker {
 
     static float chopTicks(float partialTick) {
         return time + partialTick * currentPace;
+    }
+
+    //restrict movement speed
+    static void onMovementInput(MovementInputUpdateEvent event) {
+        if (!chopping) {
+            return;
+        }
+        Input input = event.getInput();
+        input.forwardImpulse *= CHOP_MOVE_SPEED;
+        input.leftImpulse *= CHOP_MOVE_SPEED;
+        event.getEntity().setSprinting(false);
     }
 }
