@@ -22,6 +22,7 @@ import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 
 
@@ -41,6 +42,11 @@ public final class FellingTiming {
 
         //when to skip
         if (pos == null || swings <= 0.0F) {
+            return;
+        }
+
+        if (!inChopReach(player, pos)) {
+            event.setNewSpeed(0.0F);
             return;
         }
 
@@ -164,6 +170,12 @@ public final class FellingTiming {
             };
         }
         return pace;
+    }
+
+    static boolean inChopReach(Player player, BlockPos pos) {
+        double reach = FellingConfig.CHOP_REACH.get();
+        // distance from the eyes to the nearest point of block
+        return new AABB(pos).distanceToSqr(player.getEyePosition()) <= reach * reach;
     }
 
 }

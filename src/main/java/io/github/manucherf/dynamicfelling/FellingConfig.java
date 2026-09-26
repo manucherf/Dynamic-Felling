@@ -18,6 +18,7 @@ public final class FellingConfig {
     public static final ModConfigSpec.DoubleValue BACKFALL_CHANCE;
     public static final ModConfigSpec.DoubleValue LEAF_PILE_CHANCE;
     public static final ModConfigSpec.DoubleValue BEE_ANGER_CHANCE;
+    public static final ModConfigSpec.DoubleValue CHOP_REACH;
 
     static {
         ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
@@ -47,6 +48,9 @@ public final class FellingConfig {
         BEE_ANGER_CHANCE = builder
                 .comment("Chance (0 to 1) per hit that each bee nest in the tree releases angry bees (a campfire under the nest keeps them calm)")
                 .defineInRange("beeAngerChance", 0.25, 0.0, 1.0);
+        CHOP_REACH = builder
+                .comment("How far away (in blocks) a trunk can be chopped from; vanilla block reach is 4.5")
+                .defineInRange("chopReach", 3.5, 1.0, 6.0);
         SPEC = builder.build();
     }
 
