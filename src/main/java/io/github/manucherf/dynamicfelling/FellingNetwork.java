@@ -1,5 +1,6 @@
 package io.github.manucherf.dynamicfelling;
 
+import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
@@ -21,6 +22,7 @@ public final class FellingNetwork {
         //packet payload version
         PayloadRegistrar registrar = event.registrar("1");
         registrar.playToServer(ChopStatePayload.TYPE, ChopStatePayload.STREAM_CODEC, FellingNetwork::onChopState);
+        registrar.playToServer(ChopHitPayload.TYPE, ChopHitPayload.STREAM_CODEC, FellingNetwork::onChopHit);
         registrar.playToClient(PlayerChopPayload.TYPE, PlayerChopPayload.STREAM_CODEC, FellingNetwork::onPlayerChop);
     }
 
@@ -57,5 +59,20 @@ public final class FellingNetwork {
     static void onLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         //remove if quit mid chop
         CHOPPING.remove(event.getEntity().getUUID());
+    }
+
+    //only chopping players
+    static void onChopHit(ChopHitPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (context.player() instanceof ServerPlayer player && CHOPPING.containsKey(player.getUUID()) && isRealHit(player, payload.trunk())){
+                LeafPiles.onHit(player, payload.trunk());
+                AngryBees.onHit(player, payload.trunk());
+            }
+        });
+    }
+
+    private static boolean isRealHit(ServerPlayer player, BlockPos trunk) {
+        //check if real trunk
+        return player.canInteractWithBlock(trunk, 1.0) && FellingTiming.swingsToFell(player, player.serverLevel(), trunk) > 0;
     }
 }

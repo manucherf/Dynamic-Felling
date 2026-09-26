@@ -16,6 +16,8 @@ public final class FellingConfig {
     public static final ModConfigSpec.DoubleValue SWINGS_SAVED_PER_EFFICIENCY;
     public static final ModConfigSpec.IntValue MAX_SWINGS;
     public static final ModConfigSpec.DoubleValue BACKFALL_CHANCE;
+    public static final ModConfigSpec.DoubleValue LEAF_PILE_CHANCE;
+    public static final ModConfigSpec.DoubleValue BEE_ANGER_CHANCE;
 
     static {
         ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
@@ -39,6 +41,12 @@ public final class FellingConfig {
         BACKFALL_CHANCE = builder
                 .comment("Chance (0 to 1) that a felled tree falls back toward the player instead of away")
                 .defineInRange("backfallChance", 0.05, 0.0, 1.0);
+        LEAF_PILE_CHANCE = builder
+                .comment("Chance (0 to 1) per hit to drop a Project: Vibrant Journeys leaf pile near the trunk (does nothing without that mod)")
+                .defineInRange("leafPileChance", 0.1, 0.0, 1.0);
+        BEE_ANGER_CHANCE = builder
+                .comment("Chance (0 to 1) per hit that each bee nest in the tree releases angry bees (a campfire under the nest keeps them calm)")
+                .defineInRange("beeAngerChance", 0.25, 0.0, 1.0);
         SPEC = builder.build();
     }
 

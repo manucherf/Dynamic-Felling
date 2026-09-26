@@ -6,5 +6,7 @@
   "dynamicfelling.configuration.swingsSavedPerTier": "Swings saved per tier",
   "dynamicfelling.configuration.swingsSavedPerEfficiency": "Swings saved per Efficiency level",
   "dynamicfelling.configuration.maxSwings": "Max swings",
-  "dynamicfelling.configuration.backfallChance": "Backfall Chance"
+  "dynamicfelling.configuration.backfallChance": "Backfall Chance",
+  "dynamicfelling.configuration.leafPileChance": "Leaf Pile Chance",
+  "dynamicfelling.configuration.beeAngerChance": "Bee Anger Chance"
 }

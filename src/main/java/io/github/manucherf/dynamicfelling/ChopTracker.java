@@ -164,6 +164,8 @@ public class ChopTracker {
                 1.0F, 0.9F + level.random.nextFloat() * 0.2F, false);
 
         spawnChips(minecraft, level);
+        CanopyShake.onHit(minecraft, center);
+        PacketDistributor.sendToServer(new ChopHitPayload(center));
     }
 
     //clean up when crack stops
