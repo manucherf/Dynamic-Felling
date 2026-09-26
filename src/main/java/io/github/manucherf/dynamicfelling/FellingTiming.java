@@ -6,6 +6,7 @@ import com.dtteam.dynamictrees.block.branch.TrunkShellBlock;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 //import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.tags.TagKey;
@@ -24,6 +25,10 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 
 public final class FellingTiming {
@@ -55,7 +60,9 @@ public final class FellingTiming {
             return;
         }
         float divisor = !state.requiresCorrectToolForDrops() || player.hasCorrectToolForDrops(state, player.level(), pos) ? 30.0F : 100.0F;
-        float progressPerTick = 1.0F / (breakTick(swings) - 0.5F);
+        float remaining = Math.max(1.0F, swings - savedHits(player, pos));
+        //remaining swings instead of swings
+        float progressPerTick = 1.0F / (breakTick(remaining) - 0.5F);
         event.setNewSpeed(progressPerTick * pace(player) * hardness * divisor);
     }
 
@@ -178,4 +185,31 @@ public final class FellingTiming {
         return new AABB(pos).distanceToSqr(player.getEyePosition()) <= reach * reach;
     }
 
+
+    //chop session
+    private record Session(BlockPos pos, int saved) {}
+
+    private static final Map<UUID, Session> SERVER_SESSIONS = new HashMap<>();
+    private static Session clientSession;
+
+    static void startClientSession(BlockPos pos, int saved) {
+        clientSession = pos == null ? null : new Session(pos.immutable(), saved);
+    }
+
+    static void endServerSession(UUID player) {
+        SERVER_SESSIONS.remove(player);
+    }
+
+    static int savedHits(Player player, BlockPos pos) {
+        if (player.level().isClientSide()) {
+            return clientSession != null && clientSession.pos().equals(pos) ? clientSession.saved() : 0;
+        }
+        Session session = SERVER_SESSIONS.get(player.getUUID());
+        if (session == null || !session.pos().equals(pos)) {
+            //read saved count once when mining starts on the block, keep it fixed
+            session = new Session(pos.immutable(), ChopMemory.saved((ServerLevel) player.level(), trunkCenter(player.level(), pos)));
+            SERVER_SESSIONS.put(player.getUUID(), session);
+        }
+        return session.saved();
+    }
 }

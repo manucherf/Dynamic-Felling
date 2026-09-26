@@ -23,5 +23,7 @@ public final class DynamicFellingClient {
         NeoForge.EVENT_BUS.addListener(ChopHand::onClientTick);
         NeoForge.EVENT_BUS.addListener(ChopTracker::onMovementInput);
         NeoForge.EVENT_BUS.addListener(ChopTracker::onCameraAngles);
+        NeoForge.EVENT_BUS.addListener(SavedChops::onLoggingOut);
+        NeoForge.EVENT_BUS.addListener(SavedChops::onClientTick);
     }
 }

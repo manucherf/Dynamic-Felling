@@ -24,6 +24,7 @@ public final class FellingNetwork {
         registrar.playToServer(ChopStatePayload.TYPE, ChopStatePayload.STREAM_CODEC, FellingNetwork::onChopState);
         registrar.playToServer(ChopHitPayload.TYPE, ChopHitPayload.STREAM_CODEC, FellingNetwork::onChopHit);
         registrar.playToClient(PlayerChopPayload.TYPE, PlayerChopPayload.STREAM_CODEC, FellingNetwork::onPlayerChop);
+        registrar.playToClient(SavedHitsPayload.TYPE, SavedHitsPayload.STREAM_CODEC, FellingNetwork::onSavedHits);
     }
 
     private static void onChopState(ChopStatePayload payload, IPayloadContext context) {
@@ -35,6 +36,7 @@ public final class FellingNetwork {
                 CHOPPING.put(player.getUUID(), pace);
             } else {
                 CHOPPING.remove(player.getUUID());
+                FellingTiming.endServerSession(player.getUUID());
             }
             PacketDistributor.sendToPlayersTrackingEntity(player,
                     new PlayerChopPayload(player.getId(), payload.chopping(), pace));
@@ -59,14 +61,16 @@ public final class FellingNetwork {
     static void onLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         //remove if quit mid chop
         CHOPPING.remove(event.getEntity().getUUID());
+        FellingTiming.endServerSession(event.getEntity().getUUID());
     }
 
     //only chopping players
     static void onChopHit(ChopHitPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
             if (context.player() instanceof ServerPlayer player && CHOPPING.containsKey(player.getUUID()) && isRealHit(player, payload.trunk())){
-                LeafPiles.onHit(player, payload.trunk());
                 AngryBees.onHit(player, payload.trunk());
+                //work out total
+                ChopMemory.addHit(player.serverLevel(), payload.trunk(), FellingTiming.hitsToFell(FellingTiming.swingsToFell(player, player.serverLevel(), payload.trunk())));
             }
         });
     }
@@ -74,5 +78,9 @@ public final class FellingNetwork {
     private static boolean isRealHit(ServerPlayer player, BlockPos trunk) {
         //check if real trunk
         return player.canInteractWithBlock(trunk, 1.0) && FellingTiming.swingsToFell(player, player.serverLevel(), trunk) > 0;
+    }
+
+    static void onSavedHits(SavedHitsPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> SavedChops.onSaved(payload));
     }
 }

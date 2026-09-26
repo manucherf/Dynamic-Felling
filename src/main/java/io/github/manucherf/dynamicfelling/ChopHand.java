@@ -19,6 +19,7 @@ public class ChopHand {
     private static final float BLEND_TICKS = 6.0F;
     private static float blend;
     private static float prevBlend;
+    private static final int FOLLOW_THROUGH_TICKS = 5;
 
     //one pose as six numbers
     private record AxePose(float x, float y, float z, float lean, float tilt, float twist) {
@@ -51,7 +52,12 @@ public class ChopHand {
 
     //get swing from list
     private static Swing swing(int index) {
-        return SWINGS[Math.floorMod(index, SWINGS.length)];
+        long seed = ChopTracker.chopSeed();
+        //start with random swing
+        int pick = Math.floorMod(seed, SWINGS.length);
+        for (int i = 1; i <= index; i++) {
+            pick = (pick + 1 + Math.floorMod(Mth.murmurHash3Mixer((int) seed + i), SWINGS.length - 1)) % SWINGS.length;        }
+        return SWINGS[pick];
     }
 
     private static AxePose chopPose(float partialTick) {
@@ -123,6 +129,9 @@ public class ChopHand {
 
         if (ChopTracker.isChopping()) {
             lastPose = chopPose(event.getPartialTick());
+        } else if (minecraft.level != null && ChopTracker.recentlyCut(minecraft.level.getGameTime(), FOLLOW_THROUGH_TICKS)) {
+            //land exactly on final hit,break can come before last frame reaches it
+            lastPose = swing(ChopTracker.cutHits() - 1).hit();
         }
         float mix = amount * amount * (3.0F - 2.0F * amount);
         AxePose p = HOLD.lerp(lastPose, mix);
@@ -189,9 +198,12 @@ public class ChopHand {
 
     //blend once a tick
     static void onClientTick(ClientTickEvent.Post event) {
+        Minecraft minecraft = Minecraft.getInstance();
         prevBlend = blend;
         float step = 1.0F / BLEND_TICKS;
-        blend = ChopTracker.isChopping() ? Math.min(1.0F, blend + step) : Math.max(0.0F, blend - step);
+        //hold hit pose briefly after last hit
+        boolean holding = ChopTracker.isChopping() || (minecraft.level != null && ChopTracker.recentlyCut(minecraft.level.getGameTime(), FOLLOW_THROUGH_TICKS));
+        blend = holding ? Math.min(1.0F, blend + step) : Math.max(0.0F, blend - step);
     }
 
 }
