@@ -30,6 +30,7 @@ public class ChopTracker {
     private static float time;
     private static boolean chopping;
     private static float sentPace = 1.0F;
+    private static int heldStrength;
     private static float currentPace = 1.0F;
     private static final int CENTER_CRACK_ID = -1712;
     private static BlockPos center;
@@ -63,6 +64,15 @@ public class ChopTracker {
             }
 
             if ((target != null) != chopping) {
+                if (chopping && minecraft.player != null && !minecraft.options.keyAttack.isDown()) {
+                    // release attack key ending mining, which resets the attack cooldown
+                    minecraft.player.attackStrengthTicker = heldStrength + 1;
+                }
+
+                if (chopping && minecraft.gameMode != null && !minecraft.gameMode.isDestroying()) {
+                    // fix start mining skip
+                    minecraft.gameMode.destroyBlockPos = new BlockPos(-1, -1, -1);
+                }
                 //run every tick when not chopping
                 chopping = target != null;
                 sentPace = 1.0F;
@@ -95,6 +105,10 @@ public class ChopTracker {
 
         if (crossed(before, time, WOOSH_LEAD_TICKS)) {
             playWoosh(minecraft);
+        }
+
+        if (minecraft.player != null) {
+            heldStrength = minecraft.player.attackStrengthTicker;
         }
     }
 
@@ -217,5 +231,9 @@ public class ChopTracker {
     //return 0 when hit lands, then count to 20
     static float swingTicks(float partialTick) {
         return Mth.positiveModulo(time + partialTick * currentPace - FellingTiming.FIRST_HIT_TICKS, FellingTiming.TICKS_PER_SWING);
+    }
+
+    static float chopTicks(float partialTick) {
+        return time + partialTick * currentPace;
     }
 }

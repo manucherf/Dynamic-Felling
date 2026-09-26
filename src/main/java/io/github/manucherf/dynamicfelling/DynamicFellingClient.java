@@ -20,6 +20,6 @@ public final class DynamicFellingClient {
         NeoForge.EVENT_BUS.addListener(ChopHand::onRenderHand);
         NeoForge.EVENT_BUS.addListener(EventPriority.LOWEST, ChopOffhand::onRenderPre);
         NeoForge.EVENT_BUS.addListener(ChopOffhand::onRenderPost);
-
+        NeoForge.EVENT_BUS.addListener(ChopHand::onClientTick);
     }
 }
