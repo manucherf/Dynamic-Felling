@@ -15,6 +15,7 @@ public final class FellingConfig {
     public static final ModConfigSpec.DoubleValue SWINGS_SAVED_PER_TIER;
     public static final ModConfigSpec.DoubleValue SWINGS_SAVED_PER_EFFICIENCY;
     public static final ModConfigSpec.IntValue MAX_SWINGS;
+    public static final ModConfigSpec.DoubleValue BACKFALL_CHANCE;
 
     static {
         ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
@@ -35,6 +36,9 @@ public final class FellingConfig {
         MAX_SWINGS = builder
                 .comment("Most swings any trunk can take, however wide. 0 means no limit.")
                 .defineInRange("maxSwings", 0, 0, 200);
+        BACKFALL_CHANCE = builder
+                .comment("Chance (0 to 1) that a felled tree falls back toward the player instead of away")
+                .defineInRange("backfallChance", 0.05, 0.0, 1.0);
         SPEC = builder.build();
     }
 
