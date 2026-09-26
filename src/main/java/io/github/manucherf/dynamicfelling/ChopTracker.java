@@ -18,6 +18,7 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.InputEvent;
+import net.neoforged.neoforge.client.event.RenderHandEvent;
 import net.neoforged.neoforge.client.event.sound.PlaySoundEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 
@@ -29,6 +30,7 @@ public class ChopTracker {
     private static float time;
     private static boolean chopping;
     private static float sentPace = 1.0F;
+    private static float currentPace = 1.0F;
     private static final int CENTER_CRACK_ID = -1712;
     private static BlockPos center;
     private static final int WOOSH_LEAD_TICKS = 6;
@@ -40,7 +42,7 @@ public class ChopTracker {
     static void onClientTick(ClientTickEvent.Post event) {
         Minecraft minecraft = Minecraft.getInstance();
         BlockPos pos = chopTarget(minecraft);
-        //topped chopping or switched blocks: start over
+        //stopped chopping or switched blocks: start over
         if (pos == null || !pos.equals(target)) {
             clearCenterCrack(minecraft);
             target = pos;
@@ -71,6 +73,7 @@ public class ChopTracker {
 
         float before = time;
         float pace = FellingTiming.pace(minecraft.player);
+        currentPace = pace;
         time += pace;
         ChopAnimation.setPace(minecraft.player, pace);
 
@@ -207,4 +210,12 @@ public class ChopTracker {
         return FellingTiming.hitsLanded(after + lead) > FellingTiming.hitsLanded(before + lead);
     }
 
+    static boolean isChopping() {
+        return chopping;
+    }
+
+    //return 0 when hit lands, then count to 20
+    static float swingTicks(float partialTick) {
+        return Mth.positiveModulo(time + partialTick * currentPace - FellingTiming.FIRST_HIT_TICKS, FellingTiming.TICKS_PER_SWING);
+    }
 }

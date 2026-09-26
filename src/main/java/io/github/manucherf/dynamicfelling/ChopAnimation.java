@@ -65,7 +65,7 @@ public final class ChopAnimation {
         }
     }
 
-    private static boolean isPlaying(AbstractClientPlayer player) {
+    static boolean isPlaying(AbstractClientPlayer player) {
         ChopLayer layer = layer(player);
         return layer != null && layer.getAnimation() != null && layer.getAnimation().isActive();
     }
@@ -106,4 +106,6 @@ public final class ChopAnimation {
             }
         }
     }
+
+
 }
