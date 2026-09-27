@@ -9,7 +9,7 @@ public class FellingFall {
             return dtChoice;
         }
         //falling back is only ever bad luck
-        Direction away = entity.isShiftKeyDown() ? dtChoice.getOpposite() : dtChoice;
+        Direction away = dtChoice;
         return entity.getRandom().nextDouble() < FellingConfig.BACKFALL_CHANCE.get() ? away.getOpposite() : away;
     }
 }

@@ -21,5 +21,6 @@ public final class DynamicFelling {
         NeoForge.EVENT_BUS.addListener(EventPriority.LOWEST, FellingTiming::onBreakSpeed);
         NeoForge.EVENT_BUS.addListener(FellingNetwork::onStartTracking);
         NeoForge.EVENT_BUS.addListener(FellingNetwork::onLoggedOut);
+        NeoForge.EVENT_BUS.addListener(FellingNetwork::onServerStopping);
     }
 }

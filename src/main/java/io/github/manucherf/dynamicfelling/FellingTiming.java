@@ -190,7 +190,18 @@ public final class FellingTiming {
 
 
     //chop session
-    private record Session(BlockPos pos, int saved) {}
+    private static final class Session {
+        private final BlockPos pos;
+        //hits on the trunk before this chop
+        private final int saved;
+        //this player's hits since
+        private int own;
+
+        private Session(BlockPos pos, int saved) {
+            this.pos = pos;
+            this.saved = saved;
+        }
+    }
 
     private static final Map<UUID, Session> SERVER_SESSIONS = new HashMap<>();
     private static Session clientSession;
@@ -206,15 +217,17 @@ public final class FellingTiming {
     static int savedHits(Player player, BlockPos pos) {
         BlockPos trunk = trunkCenter(player.level(), pos);
         if (player.level().isClientSide()) {
-            return clientSession != null && clientSession.pos().equals(pos) ? clientSession.saved() : 0;
+            return clientSession != null && clientSession.pos.equals(trunk) ? clientSession.saved : 0;
         }
+        ServerLevel level = (ServerLevel) player.level();
         Session session = SERVER_SESSIONS.get(player.getUUID());
-        if (session == null || !session.pos().equals(trunk)) {
+        if (session == null || !session.pos.equals(trunk)) {
             //read saved count once when mining starts on the block, keep it fixed
-            session = new Session(trunk.immutable(), ChopMemory.saved((ServerLevel) player.level(), trunk));
+            session = new Session(trunk.immutable(), ChopMemory.saved(level, trunk));
             SERVER_SESSIONS.put(player.getUUID(), session);
         }
-        return session.saved();
+        //hits by everyone else, including players chopping alongside
+        return Math.max(session.saved, ChopMemory.saved(level, trunk) - session.own);
     }
 
 
@@ -228,5 +241,17 @@ public final class FellingTiming {
     //every tier above netherite of mining speed adds a level
     private static float beyondNetherite(float speed) {
         return 4.0F + Math.max(0.0F, speed - NETHERITE_SPEED) / SPEED_PER_EXTRA_TIER;
+    }
+
+    static void clearServerSessions() {
+        SERVER_SESSIONS.clear();
+    }
+
+    //server count a player's own hits
+    static void countServerHit(Player player, BlockPos trunk) {
+        Session session = SERVER_SESSIONS.get(player.getUUID());
+        if (session != null && session.pos.equals(trunk)) {
+            session.own++;
+        }
     }
 }

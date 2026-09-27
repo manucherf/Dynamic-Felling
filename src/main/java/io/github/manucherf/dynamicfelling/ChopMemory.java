@@ -32,4 +32,9 @@ public class ChopMemory {
         trunks.put(center.immutable(), new Entry(hits, now));
         PacketDistributor.sendToPlayersTrackingChunk(level, new ChunkPos(center), new SavedHitsPayload(center, hits, now, total));
     }
+
+    static void clear() {
+        TRUNKS.clear();
+    }
+
 }

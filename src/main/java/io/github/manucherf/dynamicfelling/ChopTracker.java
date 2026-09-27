@@ -46,12 +46,17 @@ public class ChopTracker {
     private static long kickAt = -100L;
     private static float kickSize = 1.0F;
     private static int saved;
+    private static int startSaved;
     private static BlockPos lastCut;
     private static long lastCutAt;
     private static ResourceLocation breakSound;
     private static int cutHits;
     private static long chopSeed;
     private static BlockPos lastCutCenter;
+    private static BlockPos otherChopCenter;
+    private static long otherChopAt;
+    private static ResourceLocation otherBreakSound;
+
 
     private ChopTracker() {}
 
@@ -81,7 +86,8 @@ public class ChopTracker {
             clearCenterCrack(minecraft);
             target = pos == null ? null : pos.immutable();
             center = pos == null ? null : FellingTiming.trunkCenter(minecraft.level, pos).immutable();            //start client chopping session
-            saved = target == null ? 0 : SavedChops.saved(minecraft.level, center);
+            startSaved = target == null ? 0 : SavedChops.saved(minecraft.level, center);
+            saved = startSaved;
             FellingTiming.startClientSession(center, saved);
 
             time = 0.0F;
@@ -124,6 +130,11 @@ public class ChopTracker {
         float pace = FellingTiming.pace(minecraft.player);
         currentPace = pace;
         time += pace;
+
+        //other players' hits on this trunk count
+        saved = Math.max(startSaved, SavedChops.saved(minecraft.level, center) - FellingTiming.hitsLanded(time));
+        FellingTiming.startClientSession(center, saved);
+
         ChopAnimation.setPace(minecraft.player, pace);
 
         //only update when pace modified
@@ -135,6 +146,11 @@ public class ChopTracker {
         updateCracks(minecraft);
         if (crossed(before, time, 0)) {
             onHit(minecraft);
+        }
+
+        //with teammates the last hit can land before vanilla's progress is full, finish it!!
+        if (minecraft.gameMode != null && FellingTiming.hitsLanded(time) >= FellingTiming.hitsToFell(Math.max(1.0F, swings - saved))) {
+            minecraft.gameMode.destroyProgress = 1.0F;
         }
 
         //only 1 swing
@@ -154,7 +170,7 @@ public class ChopTracker {
 
     //is crosshair on mineable trunk?
     private static BlockPos chopTarget(Minecraft minecraft) {
-        if (minecraft.gameMode == null || !minecraft.gameMode.isDestroying()) {
+        if (minecraft.gameMode == null || !minecraft.gameMode.isDestroying() || minecraft.screen != null || !minecraft.options.keyAttack.isDown()) {
             return null;
         }
         BlockPos pos = trunkInSight(minecraft);
@@ -197,9 +213,13 @@ public class ChopTracker {
         }
     }
 
-    //placeholder, later replace this with cracks, sound and particles.
-    private static void onHit(Minecraft minecraft) {
 
+    private static void onHit(Minecraft minecraft) {
+        LocalPlayer player = minecraft.player;
+        ClientLevel level = minecraft.level;
+        if (player == null || level == null) {
+            return;
+        }
         float size = trunkSize(minecraft);
         //minecraft.player.displayClientMessage(Component.literal("size=" + size), true);
         //float pitch = (1.1F - 0.2F * (size - 1.0F)) * (0.95F + minecraft.level.random.nextFloat() * 0.1F);
@@ -208,19 +228,16 @@ public class ChopTracker {
         float pitch = Math.max(0.7F, 1.0F - 0.15F * (size - 1.0F)) * (0.95F + minecraft.level.random.nextFloat() * 0.1F);
         float volume = 0.8F + 0.2F * size;
 
-        minecraft.level.playLocalSound(target, FellingSounds.CHOP.get(), SoundSource.BLOCKS, volume, pitch, false);
+        level.playLocalSound(target, FellingSounds.CHOP.get(), SoundSource.BLOCKS, volume, pitch, false);
         //low wooden layer under every chop, heavier on thicker trunks
         float weight = Mth.clamp((size - 0.5F) / 2.5F, 0.0F, 1.0F);
-        minecraft.level.playLocalSound(target, SoundEvents.ZOMBIE_ATTACK_WOODEN_DOOR, SoundSource.BLOCKS,
+        level.playLocalSound(target, SoundEvents.ZOMBIE_ATTACK_WOODEN_DOOR, SoundSource.BLOCKS,
                 0.15F + 0.55F * weight, 0.75F - 0.2F * weight + minecraft.level.random.nextFloat() * 0.05F, false);
 
         //String text = String.format(Locale.ROOT, "Hit %d of %d", FellingTiming.hitsLanded(time), FellingTiming.hitsToFell(swings));
         //minecraft.player.displayClientMessage(Component.literal(text), true);
-        LocalPlayer player = minecraft.player;
-        ClientLevel level = minecraft.level;
-        if (player == null || level == null) {
-            return;
-        }
+
+
         //level.playLocalSound(target, FellingSounds.CHOP.get(), SoundSource.BLOCKS,
         //        1.0F, 0.9F + level.random.nextFloat() * 0.2F, false);
 
@@ -230,14 +247,14 @@ public class ChopTracker {
 
         CanopyShake.onHit(minecraft, center);
         PacketDistributor.sendToServer(new ChopHitPayload(center));
-        kickAt = minecraft.level.getGameTime();
+        kickAt = level.getGameTime();
         kickSize = size;
     }
 
     //clean up when crack stops
     private static void clearCenterCrack(Minecraft minecraft) {
         if (center != null && minecraft.level != null) {
-            minecraft.level.destroyBlockProgress(CENTER_CRACK_ID, center, -1);
+            minecraft.level.destroyBlockProgress(ChopTracker.CENTER_CRACK_ID, center, -1);
         }
     }
 
@@ -253,6 +270,12 @@ public class ChopTracker {
             event.setSound(null);
             return;
         }
+
+        if (pos.equals(otherChopCenter) && minecraft.level.getGameTime() - otherChopAt < 40 && sound.getLocation().equals(otherBreakSound)) {
+            event.setSound(null);
+            return;
+        }
+
         //System.out.println(sound.getLocation() + " at " + pos + " target=" + target + " chop=" + chopTarget(minecraft));
         //compare with chopping  not crosshair
         if (!pos.equals(target) && !pos.equals(chopTarget(minecraft))) {
@@ -387,6 +410,14 @@ public class ChopTracker {
         }
         spawnChips(minecraft.level, center, face, at, FellingTiming.trunkSize(minecraft.level, center));
         CanopyShake.onHit(minecraft, center);
+
+        //remember trunk someone else is chopping to mute break sound
+        otherChopCenter = center.immutable();
+        otherChopAt = minecraft.level.getGameTime();
+        BlockState state = minecraft.level.getBlockState(center);
+        if (!state.isAir()) {
+            otherBreakSound = state.getSoundType(minecraft.level, center, minecraft.player).getBreakSound().getLocation();
+        }
     }
 
 

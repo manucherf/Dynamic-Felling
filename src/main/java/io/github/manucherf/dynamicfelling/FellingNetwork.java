@@ -12,6 +12,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
@@ -101,9 +102,10 @@ public final class FellingNetwork {
                 PacketDistributor.sendToPlayersTrackingEntity(player, new ChopEffectsPayload(trunk, face, at.toVector3f()));
 
                 if (isRealHit(player, trunk)) {
-                    AngryBees.onHit(player, payload.trunk());
+                    AngryBees.onHit(player, trunk);
                     //work out total
                     ChopMemory.addHit(level, trunk, FellingTiming.hitsToFell(FellingTiming.swingsToFell(player, level, trunk)));
+                    FellingTiming.countServerHit(player, trunk);
                 }
             }
         });
@@ -121,5 +123,12 @@ public final class FellingNetwork {
 
     static void onChopEffects(ChopEffectsPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> ChopTracker.onOtherHit(payload.trunk(), payload.face(), new Vec3(payload.at())));
+    }
+
+
+    static void onServerStopping(ServerStoppingEvent event) {
+        CHOPPING.clear();
+        FellingTiming.clearServerSessions();
+        ChopMemory.clear();
     }
 }
