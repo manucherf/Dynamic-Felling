@@ -51,6 +51,7 @@ public class ChopTracker {
     private static ResourceLocation breakSound;
     private static int cutHits;
     private static long chopSeed;
+    private static BlockPos lastCutCenter;
 
     private ChopTracker() {}
 
@@ -72,24 +73,23 @@ public class ChopTracker {
             if (target != null && minecraft.gameMode != null && minecraft.gameMode.destroyDelay > 0) {
                 //break sound arrives from server later
                 lastCut = target.immutable();
+                lastCutCenter = center;
                 lastCutAt = minecraft.level.getGameTime();
                 cutHits = FellingTiming.hitsToFell(Math.max(1.0F, swings - saved));
             }
 
             clearCenterCrack(minecraft);
-            target = pos;
-            center = pos == null ? null : FellingTiming.trunkCenter(minecraft.level, pos);
-            //start client chopping session
+            target = pos == null ? null : pos.immutable();
+            center = pos == null ? null : FellingTiming.trunkCenter(minecraft.level, pos).immutable();            //start client chopping session
             saved = target == null ? 0 : SavedChops.saved(minecraft.level, center);
-            FellingTiming.startClientSession(target, saved);
+            FellingTiming.startClientSession(center, saved);
 
             time = 0.0F;
             if (target != null) {
                 //fix crack flash
                 updateCracks(minecraft);
                 //save break sound
-                breakSound = minecraft.level.getBlockState(target).getSoundType(minecraft.level, target, minecraft.player).getBreakSound().getLocation();
-                //new swing order for each chop
+                breakSound = minecraft.level.getBlockState(center).getSoundType(minecraft.level, center, minecraft.player).getBreakSound().getLocation();                //new swing order for each chop
                 chopSeed = minecraft.level.random.nextLong();
             }
 
@@ -157,7 +157,8 @@ public class ChopTracker {
         if (minecraft.gameMode == null || !minecraft.gameMode.isDestroying()) {
             return null;
         }
-        return trunkInSight(minecraft);
+        BlockPos pos = trunkInSight(minecraft);
+        return pos == null ? null : stickyTarget(pos);
     }
 
     //am I mining it?
@@ -168,6 +169,16 @@ public class ChopTracker {
         }
         swings = FellingTiming.swingsToFell(player, minecraft.level, hit.getBlockPos());
         return swings > 0.0F && FellingTiming.inChopReach(player, hit.getBlockPos()) ? hit.getBlockPos() : null;
+    }
+
+    //choppable trunk out of chop reach
+    private static boolean trunkTooFar(Minecraft minecraft) {
+        LocalPlayer player = minecraft.player;
+        if (player == null || minecraft.level == null || !(minecraft.hitResult instanceof BlockHitResult hit) || hit.getType() != HitResult.Type.BLOCK) {
+            return false;
+        }
+        BlockPos pos = hit.getBlockPos();
+        return FellingTiming.swingsToFell(player, minecraft.level, pos) > 0.0F && !FellingTiming.inChopReach(player, pos);
     }
 
     private static void updateCracks(Minecraft minecraft) {
@@ -213,7 +224,10 @@ public class ChopTracker {
         //level.playLocalSound(target, FellingSounds.CHOP.get(), SoundSource.BLOCKS,
         //        1.0F, 0.9F + level.random.nextFloat() * 0.2F, false);
 
-        spawnChips(minecraft, size);
+        if (minecraft.hitResult instanceof BlockHitResult hit) {
+            spawnChips(level, center, hit.getDirection(), hit.getLocation(), size);
+        }
+
         CanopyShake.onHit(minecraft, center);
         PacketDistributor.sendToServer(new ChopHitPayload(center));
         kickAt = minecraft.level.getGameTime();
@@ -235,7 +249,7 @@ public class ChopTracker {
             return;
         }
         BlockPos pos = BlockPos.containing(sound.getX(), sound.getY(), sound.getZ());
-        if (pos.equals(lastCut) && minecraft.level.getGameTime() - lastCutAt < 20 && sound.getLocation().equals(breakSound)) {
+        if ((pos.equals(lastCut)  || pos.equals(lastCutCenter)) && minecraft.level.getGameTime() - lastCutAt < 20 && sound.getLocation().equals(breakSound)) {
             event.setSound(null);
             return;
         }
@@ -248,12 +262,19 @@ public class ChopTracker {
         if (sound.getLocation().equals(type.getHitSound().getLocation())) {
             event.setSound(null);
         }
-        System.out.println(sound.getLocation() + " block hit=" + type.getHitSound().getLocation() + " muted=" + (event.getSound() == null));
     }
 
     //only left click
     static void onInteraction(InputEvent.InteractionKeyMappingTriggered event) {
-        if (event.isAttack() && trunkInSight(Minecraft.getInstance()) != null) {
+        if (!event.isAttack()) {
+            return;
+        }
+        Minecraft minecraft = Minecraft.getInstance();
+        if (trunkInSight(minecraft) != null) {
+            event.setSwingHand(false);
+        } else if (trunkTooFar(minecraft)) {
+            //too far to chop, do nothing instead of mining
+            event.setCanceled(true);
             event.setSwingHand(false);
         }
     }
@@ -272,14 +293,13 @@ public class ChopTracker {
 
 
     //wood chips
-    private static void spawnChips(Minecraft minecraft, float size) {
-        if (!(minecraft.hitResult instanceof BlockHitResult hit)) {
+    private static void spawnChips(ClientLevel level, BlockPos center, Direction face, Vec3 at, float size) {
+        BlockState state = level.getBlockState(center);
+        if (state.isAir()) {
             return;
         }
-        RandomSource random = minecraft.level.random;
-        Direction face = hit.getDirection();
-        Vec3 at = hit.getLocation();
-        BlockParticleOption chip = new BlockParticleOption(ParticleTypes.BLOCK, minecraft.level.getBlockState(center));
+        RandomSource random = level.random;
+        BlockParticleOption chip = new BlockParticleOption(ParticleTypes.BLOCK, state);
         int count = Math.round(8 * size);
         for (int i = 0; i < count; i++) {
             // spray out of struck face toward player
@@ -287,7 +307,7 @@ public class ChopTracker {
             double vx = face.getStepX() * speed + (random.nextDouble() - 0.5) * 0.15;
             double vy = 0.05 + random.nextDouble() * 0.15;
             double vz = face.getStepZ() * speed + (random.nextDouble() - 0.5) * 0.15;
-            minecraft.level.addParticle(chip, at.x + face.getStepX() * 0.05, at.y, at.z + face.getStepZ() * 0.05, vx, vy, vz);
+            level.addParticle(chip, at.x + face.getStepX() * 0.05, at.y, at.z + face.getStepZ() * 0.05, vx, vy, vz);
         }
     }
 
@@ -334,10 +354,7 @@ public class ChopTracker {
     }
 
     private static float trunkSize(Minecraft minecraft) {
-        BlockState state = minecraft.level.getBlockState(center);
-        // DT radius 8 is 1-block trunk, 16 is 2, 24 is 3
-        float radius = state.getBlock() instanceof BranchBlock branch ? branch.getRadius(state) : 8.0F;
-        return Mth.clamp(radius / 8.0F, 0.5F, 3.0F);
+        return FellingTiming.trunkSize(minecraft.level, center);
     }
 
 
@@ -357,5 +374,28 @@ public class ChopTracker {
         }
     }
 
+
+    //chips and canopy for hit by another player
+    static void onOtherHit(BlockPos center, Direction face, Vec3 at) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.level == null) {
+            return;
+        }
+        spawnChips(minecraft.level, center, face, at, FellingTiming.trunkSize(minecraft.level, center));
+        CanopyShake.onHit(minecraft, center);
+    }
+
+
+    //keep mining the same block if crosshair moves
+    public static BlockPos stickyTarget(BlockPos pos) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (target == null || center == null || minecraft.level == null || minecraft.player == null || pos.equals(target)) {
+            return pos;
+        }
+        if (!center.equals(FellingTiming.trunkCenter(minecraft.level, pos)) || !FellingTiming.inChopReach(minecraft.player, target)) {
+            return pos;
+        }
+        return target;
+    }
 
 }

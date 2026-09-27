@@ -46,7 +46,7 @@ public final class FellingConfig {
                 .defineInRange("beeAngerChance", 0.25, 0.0, 1.0);
         CHOP_REACH = builder
                 .comment("How far away (in blocks) a trunk can be chopped from; vanilla block reach is 4.5")
-                .defineInRange("chopReach", 3.5, 1.0, 6.0);
+                .defineInRange("chopReach", 3.0, 1.0, 6.0);
         SPEC = builder.build();
     }
 

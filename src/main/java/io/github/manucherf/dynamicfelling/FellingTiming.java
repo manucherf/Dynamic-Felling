@@ -3,6 +3,7 @@ package io.github.manucherf.dynamicfelling;
 import com.dtteam.dynamictrees.block.branch.BasicRootsBlock;
 import com.dtteam.dynamictrees.block.branch.BranchBlock;
 import com.dtteam.dynamictrees.block.branch.TrunkShellBlock;
+import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 //import net.minecraft.network.chat.Component;
@@ -201,15 +202,24 @@ public final class FellingTiming {
     }
 
     static int savedHits(Player player, BlockPos pos) {
+        BlockPos trunk = trunkCenter(player.level(), pos);
         if (player.level().isClientSide()) {
             return clientSession != null && clientSession.pos().equals(pos) ? clientSession.saved() : 0;
         }
         Session session = SERVER_SESSIONS.get(player.getUUID());
-        if (session == null || !session.pos().equals(pos)) {
+        if (session == null || !session.pos().equals(trunk)) {
             //read saved count once when mining starts on the block, keep it fixed
-            session = new Session(pos.immutable(), ChopMemory.saved((ServerLevel) player.level(), trunkCenter(player.level(), pos)));
+            session = new Session(trunk.immutable(), ChopMemory.saved((ServerLevel) player.level(), trunk));
             SERVER_SESSIONS.put(player.getUUID(), session);
         }
         return session.saved();
+    }
+
+
+    public static float trunkSize(BlockGetter level, BlockPos center) {
+        BlockState state = level.getBlockState(center);
+        // DT radius 8 is 1-block trunk, 16 is 2, 24 is 3
+        float radius = state.getBlock() instanceof BranchBlock branch ? branch.getRadius(state) : 8.0F;
+        return Mth.clamp(radius / 8.0F, 0.5F, 3.0F);
     }
 }
