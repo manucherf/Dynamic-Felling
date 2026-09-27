@@ -4,6 +4,7 @@ import dev.kosmx.playerAnim.api.layered.IAnimation;
 import dev.kosmx.playerAnim.api.layered.KeyframeAnimationPlayer;
 import dev.kosmx.playerAnim.api.layered.ModifierLayer;
 import dev.kosmx.playerAnim.api.layered.modifier.AbstractFadeModifier;
+import dev.kosmx.playerAnim.api.layered.modifier.MirrorModifier;
 import dev.kosmx.playerAnim.api.layered.modifier.SpeedModifier;
 import dev.kosmx.playerAnim.core.data.KeyframeAnimation;
 import dev.kosmx.playerAnim.core.util.Ease;
@@ -13,6 +14,7 @@ import dev.kosmx.playerAnim.minecraftApi.PlayerAnimationRegistry;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.HumanoidArm;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 
 
@@ -35,6 +37,8 @@ public final class ChopAnimation {
         //lookup animation
         ChopLayer layer = layer(player);
         if (layer != null && PlayerAnimationRegistry.getAnimation(ANIMATION) instanceof KeyframeAnimation animation) {
+            //left-handed
+            layer.mirror.setEnabled(player.getMainArm() == HumanoidArm.LEFT);
             //blend over 4t
             layer.replaceAnimationWithFade(AbstractFadeModifier.standardFadeIn(4, Ease.INOUTSINE),
                     new KeyframeAnimationPlayer(animation, IMPACT_TICK + FellingTiming.TICKS_PER_SWING - FellingTiming.FIRST_HIT_TICKS), true);
@@ -59,9 +63,10 @@ public final class ChopAnimation {
 
     private static final class ChopLayer extends ModifierLayer<IAnimation> {
         private final SpeedModifier speed = new SpeedModifier(1.0F);
-
+        private final MirrorModifier mirror = new MirrorModifier();
         private ChopLayer() {
             addModifierBefore(speed);
+            addModifierBefore(mirror);
         }
     }
 
