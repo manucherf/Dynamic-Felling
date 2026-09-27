@@ -36,6 +36,8 @@ public final class FellingTiming {
     public static final int FIRST_HIT_TICKS = 11;
     public static final int TICKS_PER_SWING = 20;
     private static final float ONE_BLOCK_RADIUS = 8.0F;
+    private static final float NETHERITE_SPEED = 9.0F;
+    private static final float SPEED_PER_EXTRA_TIER = 1.0F;
 
     private FellingTiming() {}
 
@@ -113,15 +115,16 @@ public final class FellingTiming {
     }
 
     //Wood/gold 0, stone 1, iron 2, diamond 3, netherite 4.
-    private static int tierLevel(ItemStack stack) {
+    private static float tierLevel(ItemStack stack) {
         //get axe material
         if (!(stack.getItem() instanceof TieredItem tiered)) {
             return 0;
         }
         Tier tier = tiered.getTier();
+        float speed = tier.getSpeed();
         TagKey<Block> incorrect = tier.getIncorrectBlocksForDrops();
         if (incorrect.equals(BlockTags.INCORRECT_FOR_NETHERITE_TOOL)) {
-            return 4;
+            return beyondNetherite(speed);
         }
         if (incorrect.equals(BlockTags.INCORRECT_FOR_DIAMOND_TOOL)) {
             return 3;
@@ -135,9 +138,8 @@ public final class FellingTiming {
         if (incorrect.equals(BlockTags.INCORRECT_FOR_WOODEN_TOOL) || incorrect.equals(BlockTags.INCORRECT_FOR_GOLD_TOOL)) {
             return 0;
         }
-        // Modded tiers: guess from mining speed.
-        float speed = tier.getSpeed();
-        return speed <= 2.0F ? 0 : speed <= 4.0F ? 1 : speed <= 6.0F ? 2 : speed <= 8.0F ? 3 : 4;
+        //modded tiers: guess from mining speed.
+        return speed <= 2.0F ? 0 : speed <= 4.0F ? 1 : speed <= 6.0F ? 2 : speed <= 8.0F ? 3 : beyondNetherite(speed);
     }
 
     private static int efficiency(Player player, ItemStack stack) {
@@ -221,5 +223,10 @@ public final class FellingTiming {
         // DT radius 8 is 1-block trunk, 16 is 2, 24 is 3
         float radius = state.getBlock() instanceof BranchBlock branch ? branch.getRadius(state) : 8.0F;
         return Mth.clamp(radius / 8.0F, 0.5F, 3.0F);
+    }
+
+    //every tier above netherite of mining speed adds a level
+    private static float beyondNetherite(float speed) {
+        return 4.0F + Math.max(0.0F, speed - NETHERITE_SPEED) / SPEED_PER_EXTRA_TIER;
     }
 }

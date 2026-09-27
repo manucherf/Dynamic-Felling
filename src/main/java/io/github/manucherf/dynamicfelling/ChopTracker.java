@@ -350,6 +350,10 @@ public class ChopTracker {
         Input input = event.getInput();
         input.forwardImpulse *= CHOP_MOVE_SPEED;
         input.leftImpulse *= CHOP_MOVE_SPEED;
+
+        //ignore sneak
+        input.shiftKeyDown = false;
+
         event.getEntity().setSprinting(false);
     }
 
