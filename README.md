@@ -23,8 +23,8 @@ Dynamic Trees makes trees grow and fall like real trees, but chopping one down d
 
 - Minecraft 1.21.1
 - NeoForge 21.1+
-- [Dynamic Trees](https://modrinth.com/mod/dynamictrees): required on client and server
-- [Player Animator](https://modrinth.com/mod/playeranimator): required on the client
+- [Dynamic Trees](https://www.curseforge.com/minecraft/mc-mods/dynamictrees): required on client and server
+- [Player Animator](https://www.curseforge.com/minecraft/mc-mods/playeranimator): required on the client
 
 ## Configuration
 
