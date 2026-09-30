@@ -3,6 +3,8 @@ Dynamic Felling
 =======
 Dynamic Trees makes trees grow and fall like real trees, but chopping one down doesn't feel very Dynamic™: hold the button and it breaks. Introducing Dynamic Felling! This is a companion mod for Dynamic Trees, and I wanted to add the touch of realism that was missing there, so felling a tree feels like actually chopping it down with an axe.
 
+[CurseForge](https://www.curseforge.com/minecraft/mc-mods/dynamic-felling)
+
 ## Features
 
 - **Real chopping:** Axes chop Dynamic Trees trunks in timed swings instead of mining them. Thicker trunks take more swings; better axes and Efficiency lower the swings needed. Haste and Mining Fatigue change the pace.
