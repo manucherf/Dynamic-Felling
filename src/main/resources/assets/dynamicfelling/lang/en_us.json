@@ -8,5 +8,7 @@
   "dynamicfelling.configuration.maxSwings": "Max swings",
   "dynamicfelling.configuration.backfallChance": "Backfall Chance",
   "dynamicfelling.configuration.beeAngerChance": "Bee Anger Chance",
-  "dynamicfelling.configuration.chopReach": "Chop Reach"
+  "dynamicfelling.configuration.chopReach": "Chop Reach",
+  "jade.dynamicfelling.swings": "Swings to fell: %s",
+  "config.jade.plugin_dynamicfelling.swings_to_fell": "Swings to Fell"
 }
