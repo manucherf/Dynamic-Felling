@@ -394,10 +394,10 @@ public class ChopTracker {
         float since = minecraft.level.getGameTime() - kickAt + (float) event.getPartialTick();
 
         float length = KICK_TICKS + kickSize;
-        if (since < length) {
+        if (since >= 0.0F && since < length) {
             // sharp dip on impact, bigger and longer on thick trunks
             float left = 1.0F - since / length;
-            event.setPitch(event.getPitch() + KICK_DEGREES * kickSize * kickSize * left * left);
+            event.setPitch(Math.min(90.0F, event.getPitch() + KICK_DEGREES * kickSize * kickSize * left * left));
         }
     }
 
