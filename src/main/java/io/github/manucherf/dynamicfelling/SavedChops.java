@@ -18,7 +18,7 @@ public class SavedChops {
         TRUNKS.put(payload.center(), payload);
     }
 
-    static int saved(ClientLevel level, BlockPos center) {
+    public static int saved(ClientLevel level, BlockPos center) {
         SavedHitsPayload entry = TRUNKS.get(center);
         return entry == null || level.getGameTime() - entry.lastHit() > ChopMemory.FORGET_TICKS ? 0 : entry.hits();
     }
