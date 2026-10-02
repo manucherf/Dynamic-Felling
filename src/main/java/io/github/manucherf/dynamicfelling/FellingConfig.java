@@ -18,6 +18,7 @@ public final class FellingConfig {
     public static final ModConfigSpec.DoubleValue BACKFALL_CHANCE;
     public static final ModConfigSpec.DoubleValue BEE_ANGER_CHANCE;
     public static final ModConfigSpec.DoubleValue CHOP_REACH;
+    public static final ModConfigSpec.DoubleValue FALLEN_SWINGS;
 
     static {
         ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
@@ -47,6 +48,9 @@ public final class FellingConfig {
         CHOP_REACH = builder
                 .comment("How far away (in blocks) a trunk can be chopped from; vanilla block reach is 4.5")
                 .defineInRange("chopReach", 3.0, 1.0, 6.0);
+        FALLEN_SWINGS = builder
+                .comment("Swing multiplier for trunks and branches lying on the ground as physics objects (needs Sable,Tree Physics, and Dynamic Trees Physics). 0.5 means half the swings of a standing tree.")
+                .defineInRange("fallenSwings", 0.5, 0.1, 1.0);
         SPEC = builder.build();
     }
 

@@ -3,10 +3,8 @@ package io.github.manucherf.dynamicfelling;
 import com.dtteam.dynamictrees.block.branch.BasicRootsBlock;
 import com.dtteam.dynamictrees.block.branch.BranchBlock;
 import com.dtteam.dynamictrees.block.branch.TrunkShellBlock;
-import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
-//import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.ItemTags;
@@ -24,7 +22,7 @@ import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.AABB;
+import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 
 import java.util.HashMap;
@@ -38,6 +36,8 @@ public final class FellingTiming {
     private static final float ONE_BLOCK_RADIUS = 8.0F;
     private static final float NETHERITE_SPEED = 9.0F;
     private static final float SPEED_PER_EXTRA_TIER = 1.0F;
+    private static final boolean SABLE = ModList.get().isLoaded("sable");
+    private static final double FALLEN_DISTANCE_SQR = 16384.0;
 
     private FellingTiming() {}
 
@@ -52,6 +52,8 @@ public final class FellingTiming {
         if (pos == null || swings <= 0.0F) {
             return;
         }
+
+        swings = forFallen(player, pos, swings);
 
         if (!inChopReach(player, pos)) {
             event.setNewSpeed(0.0F);
@@ -80,7 +82,7 @@ public final class FellingTiming {
     }
 
     public static float swingsToFell(Player player, BlockGetter level, BlockPos pos) {
-        return swingsToFell(player, level.getBlockState(trunkCenter(level, pos)));
+        return forFallen(player, pos, swingsToFell(player, level.getBlockState(trunkCenter(level, pos))));
     }
 
     public static int hitsToFell(float swings) {
@@ -185,7 +187,7 @@ public final class FellingTiming {
     static boolean inChopReach(Player player, BlockPos pos) {
         double reach = FellingConfig.CHOP_REACH.get();
         // distance from the eyes to the nearest point of block
-        return new AABB(pos).distanceToSqr(player.getEyePosition()) <= reach * reach;
+        return player.canInteractWithBlock(pos, reach - player.blockInteractionRange());
     }
 
 
@@ -253,5 +255,13 @@ public final class FellingTiming {
         if (session != null && session.pos.equals(trunk)) {
             session.own++;
         }
+    }
+
+    private static float forFallen(Player player, BlockPos pos, float swings) {
+        if (swings <= 0.0F || !SABLE || pos.distToCenterSqr(player.position()) < FALLEN_DISTANCE_SQR) {
+            return swings;
+        }
+
+        return Math.max(1.0F, swings * FellingConfig.FALLEN_SWINGS.get().floatValue());
     }
 }

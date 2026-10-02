@@ -278,10 +278,11 @@ public class ChopTracker {
 
         //System.out.println(sound.getLocation() + " at " + pos + " target=" + target + " chop=" + chopTarget(minecraft));
         //compare with chopping  not crosshair
-        if (!pos.equals(target) && !pos.equals(chopTarget(minecraft))) {
+        BlockPos chopping = target != null ? target : chopTarget(minecraft);
+        if (chopping == null || minecraft.player.distanceToSqr(sound.getX(), sound.getY(), sound.getZ()) > 64.0) {
             return;
         }
-        SoundType type = minecraft.level.getBlockState(pos).getSoundType(minecraft.level, pos, minecraft.player);
+        SoundType type = minecraft.level.getBlockState(chopping).getSoundType(minecraft.level, chopping, minecraft.player);
         if (sound.getLocation().equals(type.getHitSound().getLocation())) {
             event.setSound(null);
         }
