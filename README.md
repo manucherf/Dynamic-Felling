@@ -38,6 +38,7 @@ Dynamic Trees makes trees grow and fall like real trees, but chopping one down d
 ## Configuration
 
 Server settings are in `config/dynamicfelling-server.toml`: swings per axe tier, Efficiency bonus, max swings, chop reach, backfall chance, bee anger chance, fallen swings, and excluded tools.
+
 Client settings are in `config/dynamicfelling-client.toml`: Swing counter on or off.
 
 ## License
