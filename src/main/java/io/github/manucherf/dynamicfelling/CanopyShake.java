@@ -1,6 +1,7 @@
 package io.github.manucherf.dynamicfelling;
 
 import com.dtteam.dynamictrees.block.branch.BranchBlock;
+import io.github.manucherf.dynamicfelling.compat.FallingLeavesCompat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.Particle;
@@ -13,16 +14,19 @@ import net.minecraft.tags.BlockTags;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.neoforged.fml.ModList;
 
 import java.util.*;
 
 public class CanopyShake {
     private static final int LEAF_SEARCHES = 512;
     private static final int LEAVES_PER_HIT = 128;
+    private static final int FALLING_LEAVES_PER_HIT = 64;
     private static final int MAX_BRANCHES = 512;
     private static BlockPos cachedTrunk;
     private static List<BlockPos> cachedLeaves = List.of();
     private static final int LEAFY_RADIUS = 1;
+    private static final boolean FALLING_LEAVES = ModList.get().isLoaded("fallingleaves");
 
     static void onHit(Minecraft minecraft, BlockPos trunk) {
         ClientLevel level = minecraft.level;
@@ -42,6 +46,10 @@ public class CanopyShake {
             case MINIMAL -> 0;
         };
 
+        if (FALLING_LEAVES) {
+            maxLeaves = maxLeaves * FALLING_LEAVES_PER_HIT / LEAVES_PER_HIT;
+        }
+
         BlockPos rustleAt = null;
         int spawned = 0;
         for (int i = 0; i < LEAF_SEARCHES && spawned < maxLeaves; i++) {
@@ -51,6 +59,12 @@ public class CanopyShake {
                 continue;
             }
             for (int j = 0; j < 1 && spawned < maxLeaves; j++) {
+                if (FALLING_LEAVES) {
+                    FallingLeavesCompat.spawnLeaf(level, pos, state, random);
+                    rustleAt = pos;
+                    spawned++;
+                    continue;
+                }
                 double x = pos.getX() + random.nextDouble();
                 double y = pos.getY() - 0.05;
                 double z = pos.getZ() + random.nextDouble();

@@ -21,6 +21,12 @@ Dynamic Trees makes trees grow and fall like real trees, but chopping one down d
 
 [![Dynamic Felling demo](https://img.youtube.com/vi/ys0AQpgfMpc/maxresdefault.jpg)](https://www.youtube.com/watch?v=ys0AQpgfMpc)
 
+## Optional Compatibility
+
+- [Jade](https://www.curseforge.com/minecraft/mc-mods/jade): Shows a live count of the swings left to fell a trunk.
+- [Falling Leaves](https://www.curseforge.com/minecraft/mc-mods/falling-leaves-forge): Chopping shakes loose Falling Leaves' leaf particles in place of the default ones.
+- [Dynamic Tree Physics](https://www.curseforge.com/minecraft/mc-mods/dynamic-trees-physics): Fallen trunks and branches can be chopped up with swings, with a configurable swing multiplier (`fallenSwings`).
+
 
 ## Requirements
 
@@ -31,7 +37,9 @@ Dynamic Trees makes trees grow and fall like real trees, but chopping one down d
 
 ## Configuration
 
-Server settings are in `config/dynamicfelling-server.toml`: swings per axe tier, Efficiency bonus, max swings, chop reach, backfall chance, bee anger chance and excluded tools.
+Server settings are in `config/dynamicfelling-server.toml`: swings per axe tier, Efficiency bonus, max swings, chop reach, backfall chance, bee anger chance, fallen swings, and excluded tools.
+
+Client settings are in `config/dynamicfelling-client.toml`: Swing counter on or off.
 
 ## License
 

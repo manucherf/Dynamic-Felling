@@ -3,12 +3,14 @@
   "subtitles.dynamicfelling.woosh": "Axe swings",
   "dynamicfelling.configuration.excludedTools": "Excluded tools",
   "dynamicfelling.configuration.woodenAxeSwings": "Wooden axe swings",
-  "dynamicfelling.configuration.swingsSavedPerTier": "Swings saved per tier",
-  "dynamicfelling.configuration.swingsSavedPerEfficiency": "Swings saved per Efficiency level",
+  "dynamicfelling.configuration.swingReductionPerTier": "Swing reduction per tier",
+  "dynamicfelling.configuration.swingReductionPerEfficiency": "Swing reduction per Efficiency level",
+  "dynamicfelling.configuration.fallenSwings": "Fallen tree swing multiplier",
   "dynamicfelling.configuration.maxSwings": "Max swings",
-  "dynamicfelling.configuration.backfallChance": "Backfall Chance",
-  "dynamicfelling.configuration.beeAngerChance": "Bee Anger Chance",
-  "dynamicfelling.configuration.chopReach": "Chop Reach",
+  "dynamicfelling.configuration.backfallChance": "Backfall chance",
+  "dynamicfelling.configuration.beeAngerChance": "Bee anger chance",
+  "dynamicfelling.configuration.chopReach": "Chop reach",
   "jade.dynamicfelling.swings": "Swings to fell: %s",
-  "config.jade.plugin_dynamicfelling.swings_to_fell": "Swings to Fell"
+  "config.jade.plugin_dynamicfelling.swings_to_fell": "Swings to fell",
+  "dynamicfelling.configuration.showCounter": "Show swing counter"
 }

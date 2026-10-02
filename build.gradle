@@ -36,6 +36,10 @@ repositories {
         url = 'https://maven.kosmx.dev/'
         content { includeGroup 'dev.kosmx.player-anim' }
     }
+    maven {
+        url = 'https://cursemaven.com'
+        content { includeGroup 'curse.maven' }
+    }
 }
 
 base {
@@ -130,33 +134,17 @@ configurations {
 }
 
 dependencies {
-    // Example optional mod dependency with JEI
-    // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime
-    // compileOnly "mezz.jei:jei-${mc_version}-common-api:${jei_version}"
-    // compileOnly "mezz.jei:jei-${mc_version}-neoforge-api:${jei_version}"
-    // We add the full version to localRuntime, not runtimeOnly, so that we do not publish a dependency on it
-    // localRuntime "mezz.jei:jei-${mc_version}-neoforge:${jei_version}"
-
-    // Example mod dependency using a mod jar from ./libs with a flat dir repository
-    // This maps to ./libs/coolmod-${mc_version}-${coolmod_version}.jar
-    // The group id is ignored when searching -- in this case, it is "blank"
-    // implementation "blank:coolmod-${mc_version}:${coolmod_version}"
-
-    // Example mod dependency using a file as dependency
-    // implementation files("libs/coolmod-${mc_version}-${coolmod_version}.jar")
-
-    // Example project dependency using a sister or child project:
-    // implementation project(":myproject")
-
-    // For more info:
-    // http://www.gradle.org/docs/current/userguide/artifact_dependencies_tutorial.html
-    // http://www.gradle.org/docs/current/userguide/dependency_management.html
     compileOnly "maven.modrinth:dynamictrees:G4uJ0UA0"
     localRuntime "maven.modrinth:dynamictrees:G4uJ0UA0"
     implementation "dev.kosmx.player-anim:player-animation-lib-forge:2.0.4+1.21.1"
     localRuntime "maven.modrinth:qaO9Dqpu:LX5fWOvU"
     compileOnly "maven.modrinth:jade:15.10.6+neoforge"
     localRuntime "maven.modrinth:jade:15.10.6+neoforge"
+    compileOnly "maven.modrinth:2JAUNCL4:PVzaPLSv"
+    //localRuntime "maven.modrinth:2JAUNCL4:PVzaPLSv"
+    //localRuntime "maven.modrinth:T9PomCSv:U678xqle"
+    //localRuntime "maven.modrinth:AlVH5pr8:nRQrvQIW"
+    //localRuntime "curse.maven:dynamic-trees-physics-1627813:8938451"
 }
 
 // This block of code expands all declared replace properties in the specified resource targets.
