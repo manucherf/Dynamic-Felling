@@ -2,6 +2,7 @@ package io.github.manucherf.dynamicfelling;
 
 import com.dtteam.dynamictrees.block.branch.BranchBlock;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.Input;
 import net.minecraft.client.player.LocalPlayer;
@@ -16,15 +17,13 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
-import net.neoforged.neoforge.client.event.InputEvent;
-import net.neoforged.neoforge.client.event.MovementInputUpdateEvent;
-import net.neoforged.neoforge.client.event.ViewportEvent;
+import net.neoforged.neoforge.client.event.*;
 import net.neoforged.neoforge.client.event.sound.PlaySoundEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 
@@ -56,6 +55,9 @@ public class ChopTracker {
     private static BlockPos otherChopCenter;
     private static long otherChopAt;
     private static ResourceLocation otherBreakSound;
+    private static final float COUNTER_FADE = 0.2F;
+    private static float counterAlpha;
+    private static String counterText = "";
 
 
     private ChopTracker() {}
@@ -213,6 +215,41 @@ public class ChopTracker {
         }
     }
 
+    static void onRenderGui(RenderGuiEvent.Post event) {
+        Minecraft minecraft = Minecraft.getInstance();
+        LocalPlayer player = minecraft.player;
+        if (player == null || minecraft.level == null || minecraft.options.hideGui) {
+            return;
+        }
+        int total = 0;
+        int hits = 0;
+        if (target != null) {
+            total = FellingTiming.hitsToFell(swings);
+            hits = saved + FellingTiming.hitsLanded(time);
+        } else if (minecraft.hitResult instanceof BlockHitResult hit) {
+            float looked = FellingTiming.swingsToFell(player, minecraft.level, hit.getBlockPos());
+            if (looked > 0.0F) {
+                total = FellingTiming.hitsToFell(looked);
+                hits = SavedChops.saved(minecraft.level, FellingTiming.trunkCenter(minecraft.level, hit.getBlockPos()));
+            }
+        }
+        boolean visible = total > 0 && FellingClientConfig.SHOW_COUNTER.get();
+        if (visible) {
+            counterText = Math.min(total, hits) + "/" + total;
+        }
+        float step = event.getPartialTick().getRealtimeDeltaTicks() * COUNTER_FADE;
+        counterAlpha = Mth.clamp(counterAlpha + (visible ? step : -step), 0.0F, 1.0F);
+        int alpha = (int) (counterAlpha * 255.0F);
+        if (alpha < 4) {
+            return;
+        }
+        GuiGraphics graphics = event.getGuiGraphics();
+        int x = player.getMainArm() == HumanoidArm.LEFT
+                ? graphics.guiWidth() / 2 + 32 - minecraft.font.width(counterText)
+                : graphics.guiWidth() / 2 - 32;
+        int y = graphics.guiHeight() / 2 - 16;
+        graphics.drawString(minecraft.font, counterText, x, y, alpha << 24 | 0xFFFFFF);
+    }
 
     private static void onHit(Minecraft minecraft) {
         LocalPlayer player = minecraft.player;

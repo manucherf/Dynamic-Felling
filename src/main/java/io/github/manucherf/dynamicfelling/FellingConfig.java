@@ -12,8 +12,8 @@ public final class FellingConfig {
     public static final ModConfigSpec SPEC;
     public static final ModConfigSpec.ConfigValue<List<? extends String>> EXCLUDED_TOOLS;
     public static final ModConfigSpec.DoubleValue WOODEN_AXE_SWINGS;
-    public static final ModConfigSpec.DoubleValue SWINGS_SAVED_PER_TIER;
-    public static final ModConfigSpec.DoubleValue SWINGS_SAVED_PER_EFFICIENCY;
+    public static final ModConfigSpec.DoubleValue TIER_REDUCTION;
+    public static final ModConfigSpec.DoubleValue EFFICIENCY_REDUCTION;
     public static final ModConfigSpec.IntValue MAX_SWINGS;
     public static final ModConfigSpec.DoubleValue BACKFALL_CHANCE;
     public static final ModConfigSpec.DoubleValue BEE_ANGER_CHANCE;
@@ -30,12 +30,12 @@ public final class FellingConfig {
         WOODEN_AXE_SWINGS = builder
                 .comment("Swings a wooden axe needs to fell a trunk one block wide.")
                 .defineInRange("woodenAxeSwings", 10.0, 1.0, 100.0);
-        SWINGS_SAVED_PER_TIER = builder
-                .comment("Swings saved for each axe tier above wood (stone 1, iron 2, diamond 3, netherite 4).")
-                .defineInRange("swingsSavedPerTier", 1.0, 0.0, 20.0);
-        SWINGS_SAVED_PER_EFFICIENCY = builder
-                .comment("Swings saved for each level of Efficiency.")
-                .defineInRange("swingsSavedPerEfficiency", 0.5, 0.0, 10.0);
+        TIER_REDUCTION = builder
+                .comment("Fraction of swings removed by each axe tier above wood (stone 1, iron 2, diamond 3, netherite 4). 0.15 means each tier needs 15% fewer swings than the one below.")
+                .defineInRange("swingReductionPerTier", 0.15, 0.0, 0.9);
+        EFFICIENCY_REDUCTION = builder
+                .comment("Fraction of swings removed by each level of Efficiency. 0.1 means 10% fewer swings per level.")
+                .defineInRange("swingReductionPerEfficiency", 0.1, 0.0, 0.9);
         MAX_SWINGS = builder
                 .comment("Most swings any trunk can take, however wide. 0 means no limit.")
                 .defineInRange("maxSwings", 0, 0, 200);

@@ -55,7 +55,8 @@ public final class FellingTiming {
 
         swings = forFallen(player, pos, swings);
 
-        if (!inChopReach(player, pos)) {
+        double slack = state.getBlock() instanceof BranchBlock branch && branch.getRadius(state) > ONE_BLOCK_RADIUS ? 1.5 : 0.0;
+        if (!inChopReach(player, pos, slack)) {
             event.setNewSpeed(0.0F);
             return;
         }
@@ -103,8 +104,8 @@ public final class FellingTiming {
     public static float swingsNeeded(Player player, ItemStack axe, int radius) {
         //swing math
         float forOneBlock = FellingConfig.WOODEN_AXE_SWINGS.get().floatValue()
-                - tierLevel(axe) * FellingConfig.SWINGS_SAVED_PER_TIER.get().floatValue()
-                - efficiency(player, axe) * FellingConfig.SWINGS_SAVED_PER_EFFICIENCY.get().floatValue();
+                * (float) Math.pow(1.0 - FellingConfig.TIER_REDUCTION.get(), tierLevel(axe))
+                * (float) Math.pow(1.0 - FellingConfig.EFFICIENCY_REDUCTION.get(), efficiency(player, axe));
         float swings = Math.max(1.0F, forOneBlock * radius / ONE_BLOCK_RADIUS);
         int max = FellingConfig.MAX_SWINGS.get();
         return max > 0 ? Math.min(swings, max) : swings;
@@ -185,8 +186,11 @@ public final class FellingTiming {
     }
 
     static boolean inChopReach(Player player, BlockPos pos) {
-        double reach = FellingConfig.CHOP_REACH.get();
-        // distance from the eyes to the nearest point of block
+        return inChopReach(player, pos, 0.0);
+    }
+
+    static boolean inChopReach(Player player, BlockPos pos, double slack) {
+        double reach = FellingConfig.CHOP_REACH.get() + slack;
         return player.canInteractWithBlock(pos, reach - player.blockInteractionRange());
     }
 

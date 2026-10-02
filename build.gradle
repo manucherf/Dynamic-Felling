@@ -140,7 +140,7 @@ dependencies {
     localRuntime "maven.modrinth:qaO9Dqpu:LX5fWOvU"
     compileOnly "maven.modrinth:jade:15.10.6+neoforge"
     localRuntime "maven.modrinth:jade:15.10.6+neoforge"
-    //compileOnly "maven.modrinth:2JAUNCL4:PVzaPLSv"
+    compileOnly "maven.modrinth:2JAUNCL4:PVzaPLSv"
     //localRuntime "maven.modrinth:2JAUNCL4:PVzaPLSv"
     //localRuntime "maven.modrinth:T9PomCSv:U678xqle"
     //localRuntime "maven.modrinth:AlVH5pr8:nRQrvQIW"
