@@ -19,7 +19,7 @@ Dynamic Trees makes trees grow and fall like real trees, but chopping one down d
 
 ## Demo
 
-[![Dynamic Felling demo](https://img.youtube.com/vi/JxidepdiDB4/maxresdefault.jpg)](https://www.youtube.com/watch?v=JxidepdiDB4)
+[![Dynamic Felling demo](https://img.youtube.com/vi/ys0AQpgfMpc/maxresdefault.jpg)](https://www.youtube.com/watch?v=ys0AQpgfMpc)
 
 
 ## Requirements
