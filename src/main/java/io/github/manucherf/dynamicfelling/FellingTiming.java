@@ -5,6 +5,7 @@ import com.dtteam.dynamictrees.block.branch.BranchBlock;
 import com.dtteam.dynamictrees.block.branch.TrunkShellBlock;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.ItemTags;
@@ -14,10 +15,7 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffectUtil;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.AxeItem;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Tier;
-import net.minecraft.world.item.TieredItem;
+import net.minecraft.world.item.*;
 import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.Block;
@@ -38,6 +36,9 @@ public final class FellingTiming {
     private static final float SPEED_PER_EXTRA_TIER = 1.0F;
     private static final boolean SABLE = ModList.get().isLoaded("sable");
     private static final double FALLEN_DISTANCE_SQR = 16384.0;
+    private static final float MAX_PACE = 2.0F;
+    private static final TagKey<Item> UNSHARPENABLE = TagKey.create(Registries.ITEM, ResourceLocation.fromNamespaceAndPath(DynamicFelling.MODID, "unsharpenable"));
+    private static final int NEW_EDGE = 100;
 
     private FellingTiming() {}
 
@@ -75,7 +76,7 @@ public final class FellingTiming {
     //returns 0 when block or tool isn't a handled one
     public static float swingsToFell(Player player, BlockState state) {
         ItemStack axe = player.getMainHandItem();
-        if (player.isCreative() || !isAxe(axe)
+        if (!FellingConfig.ENABLED.get() || player.isCreative() || !isAxe(axe)
                 || !(state.getBlock() instanceof BranchBlock branch) || branch instanceof BasicRootsBlock) {
             return 0.0F;
         }
@@ -105,7 +106,8 @@ public final class FellingTiming {
         //swing math
         float forOneBlock = FellingConfig.WOODEN_AXE_SWINGS.get().floatValue()
                 * (float) Math.pow(1.0 - FellingConfig.TIER_REDUCTION.get(), tierLevel(axe))
-                * (float) Math.pow(1.0 - FellingConfig.EFFICIENCY_REDUCTION.get(), efficiency(player, axe));
+                * (float) Math.pow(1.0 - FellingConfig.EFFICIENCY_REDUCTION.get(), efficiency(player, axe))
+                * edgeFactor(axe);
         float swings = Math.max(1.0F, forOneBlock * radius / ONE_BLOCK_RADIUS);
         int max = FellingConfig.MAX_SWINGS.get();
         return max > 0 ? Math.min(swings, max) : swings;
@@ -169,7 +171,7 @@ public final class FellingTiming {
 
     //haste/fatigue
     public static float pace(Player player) {
-        float pace = 1.0F;
+        float pace = tempo(player.getMainHandItem());
         if (MobEffectUtil.hasDigSpeed(player)) {
             pace *= 1.0F + (MobEffectUtil.getDigSpeedAmplification(player) + 1) * 0.2F;
         }
@@ -182,7 +184,7 @@ public final class FellingTiming {
                 default -> 8.1E-4F;
             };
         }
-        return pace;
+        return Math.min(pace, MAX_PACE);
     }
 
     static boolean inChopReach(Player player, BlockPos pos) {
@@ -216,8 +218,8 @@ public final class FellingTiming {
         clientSession = pos == null ? null : new Session(pos.immutable(), saved);
     }
 
-    static void endServerSession(UUID player) {
-        SERVER_SESSIONS.remove(player);
+    static void endServerSession(Player player) {
+        Session session = SERVER_SESSIONS.remove(player.getUUID());
     }
 
     static int savedHits(Player player, BlockPos pos) {
@@ -258,6 +260,7 @@ public final class FellingTiming {
         Session session = SERVER_SESSIONS.get(player.getUUID());
         if (session != null && session.pos.equals(trunk)) {
             session.own++;
+            wearEdge(player, 1);
         }
     }
 
@@ -268,4 +271,54 @@ public final class FellingTiming {
 
         return Math.max(1.0F, swings * FellingConfig.FALLEN_SWINGS.get().floatValue());
     }
+
+    private static float tempo(ItemStack axe) {
+        float speed = axe.getItem() instanceof TieredItem tiered ? tiered.getTier().getSpeed() : 2.0F;
+        return 0.5F + speed / (2.0F * NETHERITE_SPEED);
+    }
+
+    //edge 50 is normal, 100 keen, 0 dull
+    private static float edgeFactor(ItemStack axe) {
+        if (axe.is(UNSHARPENABLE)) {
+            return 1.0F;
+        }
+        float keen = FellingConfig.KEEN_BONUS.get().floatValue();
+        float dull = FellingConfig.DULL_PENALTY.get().floatValue();
+        return switch (edgeLevel(axe)) {
+            case 3 -> 1.0F - keen;
+            case 2 -> 1.0F;
+            case 1 -> 1.0F + dull * 0.5F;
+            default -> 1.0F + dull;
+        };
+    }
+
+    //wear the held axe for this chop's hits
+    private static void wearEdge(Player player, int hits) {
+        ItemStack axe = player.getMainHandItem();
+        if (hits <= 0 || !isAxe(axe) || axe.is(UNSHARPENABLE)) {
+            return;
+        }
+        int worn = 0;
+        for (int i = 0; i < hits; i++) {
+            if (player.getRandom().nextFloat() < FellingConfig.EDGE_WEAR_CHANCE.get()) {
+                worn += FellingConfig.EDGE_WEAR_AMOUNT.get();
+            }
+        }
+        int edge = edge(axe);
+        axe.set(FellingComponents.EDGE.get(), Math.max(0, edge - worn));
+    }
+
+    public static boolean canSharpen(ItemStack stack) {
+        return isAxe(stack) && !stack.is(UNSHARPENABLE);
+    }
+
+    public static int edge(ItemStack axe) {
+        return axe.getOrDefault(FellingComponents.EDGE.get(), NEW_EDGE);
+    }
+
+    public static int edgeLevel(ItemStack axe) {
+        int edge = FellingTiming.edge(axe);
+        return edge >= 75 ? 3 : edge >= 50 ? 2 : edge >= 25 ? 1 : 0;
+    }
+
 }

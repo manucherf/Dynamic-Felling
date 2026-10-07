@@ -45,7 +45,7 @@ public final class FellingNetwork {
                 CHOPPING.put(player.getUUID(), pace);
             } else {
                 CHOPPING.remove(player.getUUID());
-                FellingTiming.endServerSession(player.getUUID());
+                FellingTiming.endServerSession(player);
             }
             PacketDistributor.sendToPlayersTrackingEntity(player,
                     new PlayerChopPayload(player.getId(), payload.chopping(), pace));
@@ -70,7 +70,7 @@ public final class FellingNetwork {
     static void onLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         //remove if quit mid chop
         CHOPPING.remove(event.getEntity().getUUID());
-        FellingTiming.endServerSession(event.getEntity().getUUID());
+        FellingTiming.endServerSession(event.getEntity());
     }
 
     //only chopping players

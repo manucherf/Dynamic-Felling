@@ -22,5 +22,8 @@ public final class DynamicFelling {
         NeoForge.EVENT_BUS.addListener(FellingNetwork::onStartTracking);
         NeoForge.EVENT_BUS.addListener(FellingNetwork::onLoggedOut);
         NeoForge.EVENT_BUS.addListener(FellingNetwork::onServerStopping);
+        FellingComponents.COMPONENTS.register(modBus);
+        FellingItems.ITEMS.register(modBus);
+        modBus.addListener(FellingItems::onCreativeTab);
     }
 }

@@ -20,6 +20,7 @@ public class ChopHand {
     private static float blend;
     private static float prevBlend;
     private static final int FOLLOW_THROUGH_TICKS = 5;
+    private static final float HOLD_SHARE = 0.7F;
 
     //one pose as six numbers
     private record AxePose(float x, float y, float z, float lean, float tilt, float twist) {
@@ -70,7 +71,7 @@ public class ChopHand {
         if (chopped < FellingTiming.FIRST_HIT_TICKS - 5.0F) {
             return swing(0).raised();
         }
-        float ticks = ChopTracker.swingTicks(partialTick);
+        float ticks = visualTicks(ChopTracker.swingTicks(partialTick), ChopTracker.pace());
         int hits = Mth.floor((chopped - FellingTiming.FIRST_HIT_TICKS) / FellingTiming.TICKS_PER_SWING) + 1;
         Swing next = swing(hits);
         // resting and pulling back start from the last swing's hit; the downswing ends at the next one's
@@ -188,7 +189,7 @@ public class ChopHand {
         pose.popPose();
     }
 
-    private static void drawMarker(PoseStack pose, RenderHandEvent event) {
+     static void drawMarker(PoseStack pose, RenderHandEvent event) {
         pose.pushPose();
         pose.scale(0.1F, 0.1F, 0.1F);
         Minecraft.getInstance().getItemRenderer().renderStatic(new ItemStack(Items.REDSTONE_BLOCK), ItemDisplayContext.FIXED,
@@ -204,6 +205,29 @@ public class ChopHand {
         //hold hit pose briefly after last hit
         boolean holding = ChopTracker.isChopping() || (minecraft.level != null && ChopTracker.recentlyCut(minecraft.level.getGameTime(), FOLLOW_THROUGH_TICKS));
         blend = holding ? Math.min(1.0F, blend + step) : Math.max(0.0F, blend - step);
+    }
+
+    private static float visualTicks(float ticks, float pace) {
+        if (pace >= 1.0F) {
+            return ticks;
+        }
+        float real = ticks / pace;
+        float extra = (FellingTiming.TICKS_PER_SWING / pace - FellingTiming.TICKS_PER_SWING);// / 2.0F;
+        float rest = 6.0F + extra * (1.0F - HOLD_SHARE);
+        if (real < rest) {
+            return real / rest * 6.0F;
+        }
+        real -= rest;
+        if (real < 6.0F) {
+            return 6.0F + real;
+        }
+        real -= 6.0F;
+        float hold = 3.0F + extra * HOLD_SHARE;
+        if (real < hold) {
+            return 12.0F + real / hold * 3.0F;
+        }
+        real -= hold;
+        return Math.min(20.0F, 15.0F + real);
     }
 
 }

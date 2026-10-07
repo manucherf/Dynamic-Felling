@@ -12,6 +12,7 @@ import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.block.LeavesBlock;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.fml.ModList;
@@ -55,7 +56,7 @@ public class CanopyShake {
         for (int i = 0; i < LEAF_SEARCHES && spawned < maxLeaves; i++) {
             BlockPos pos = leaves.get(random.nextInt(leaves.size()));
             BlockState state = level.getBlockState(pos);
-            if (!state.is(BlockTags.LEAVES)) {
+            if (!isLeaf(state)) {
                 continue;
             }
             for (int j = 0; j < 1 && spawned < maxLeaves; j++) {
@@ -116,7 +117,7 @@ public class CanopyShake {
             //check 5x5x5 around each branch
             for (BlockPos pos : BlockPos.betweenClosed(branch.offset(-2, -2, -2), branch.offset(2, 2, 2))) {
                 //only the underside of the canopy
-                if (level.getBlockState(pos).is(BlockTags.LEAVES) && level.getBlockState(pos.below()).isAir()) {
+                if (isLeaf(level.getBlockState(pos)) && level.getBlockState(pos.below()).isAir()) {
                     leaves.add(pos.immutable());
                 }
             }
@@ -132,5 +133,9 @@ public class CanopyShake {
             cachedLeaves = findLeaves(level, trunk);
         }
         return cachedLeaves;
+    }
+
+    private static boolean isLeaf(BlockState state) {
+        return state.is(BlockTags.LEAVES) || state.getBlock() instanceof LeavesBlock;
     }
 }

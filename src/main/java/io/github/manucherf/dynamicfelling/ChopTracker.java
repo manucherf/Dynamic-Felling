@@ -1,6 +1,7 @@
 package io.github.manucherf.dynamicfelling;
 
 import com.dtteam.dynamictrees.block.branch.BranchBlock;
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -18,6 +19,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.HumanoidArm;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
@@ -58,6 +60,15 @@ public class ChopTracker {
     private static final float COUNTER_FADE = 0.2F;
     private static float counterAlpha;
     private static String counterText = "";
+    private static final ResourceLocation[] EDGE_ICONS = {
+            ResourceLocation.fromNamespaceAndPath(DynamicFelling.MODID, "edge_0"),
+            ResourceLocation.fromNamespaceAndPath(DynamicFelling.MODID, "edge_1"),
+            ResourceLocation.fromNamespaceAndPath(DynamicFelling.MODID, "edge_2"),
+            ResourceLocation.fromNamespaceAndPath(DynamicFelling.MODID, "edge_3")
+    };
+    private static final float ICON_BLEND = 0.15F;
+    private static float iconAlpha;
+    private static float iconLevel;
 
 
     private ChopTracker() {}
@@ -237,18 +248,41 @@ public class ChopTracker {
         if (visible) {
             counterText = Math.min(total, hits) + "/" + total;
         }
-        float step = event.getPartialTick().getRealtimeDeltaTicks() * COUNTER_FADE;
+        float delta = event.getPartialTick().getRealtimeDeltaTicks();
+        float step = delta * COUNTER_FADE;
         counterAlpha = Mth.clamp(counterAlpha + (visible ? step : -step), 0.0F, 1.0F);
-        int alpha = (int) (counterAlpha * 255.0F);
-        if (alpha < 4) {
-            return;
+
+        //edge icon, with counter or whetstone in offhand
+        ItemStack axe = player.getMainHandItem();
+        boolean sharpenable = FellingTiming.canSharpen(axe);
+        boolean whetstone = player.getOffhandItem().is(FellingItems.WHETSTONE.get());
+        boolean showIcon = sharpenable && (visible || whetstone);
+        iconAlpha = Mth.clamp(iconAlpha + (showIcon ? step : -step), 0.0F, 1.0F);
+        if (sharpenable) {
+            int level = FellingTiming.edgeLevel(axe);
+            iconLevel = iconAlpha <= 0.0F ? level : Mth.approach(iconLevel, level, delta * ICON_BLEND);
         }
+
         GuiGraphics graphics = event.getGuiGraphics();
-        int x = player.getMainArm() == HumanoidArm.LEFT
-                ? graphics.guiWidth() / 2 + 32 - minecraft.font.width(counterText)
-                : graphics.guiWidth() / 2 - 32;
+        boolean left = player.getMainArm() == HumanoidArm.LEFT;
+        int centre = graphics.guiWidth() / 2;
         int y = graphics.guiHeight() / 2 - 16;
-        graphics.drawString(minecraft.font, counterText, x, y, alpha << 24 | 0xFFFFFF);
+
+        int alpha = (int) (counterAlpha * 255.0F);
+        if (alpha >= 4) {
+            int x = left ? centre + 32 - minecraft.font.width(counterText) : centre - 32;
+            graphics.drawString(minecraft.font, counterText, x, y, alpha << 24 | 0xFFFFFF);
+        }
+
+        if (iconAlpha > 0.02F) {
+            int iconX = left ? centre + 34 : centre - 50;
+            int low = (int) iconLevel;
+            float mix = iconLevel - low;
+            drawIcon(graphics, low, iconX, y - 5, iconAlpha * (1.0F - mix));
+            if (mix > 0.0F) {
+                drawIcon(graphics, low + 1, iconX, y - 5, iconAlpha * mix);
+            }
+        }
     }
 
     private static void onHit(Minecraft minecraft) {
@@ -394,6 +428,7 @@ public class ChopTracker {
         return chopSeed;
     }
 
+
     //return 0 when hit lands, then count to 20
     static float swingTicks(float partialTick) {
         return Mth.positiveModulo(time + partialTick * currentPace - FellingTiming.FIRST_HIT_TICKS, FellingTiming.TICKS_PER_SWING);
@@ -401,6 +436,10 @@ public class ChopTracker {
 
     static float chopTicks(float partialTick) {
         return time + partialTick * currentPace;
+    }
+
+    static float pace() {
+        return currentPace;
     }
 
     //restrict movement speed
@@ -469,6 +508,19 @@ public class ChopTracker {
             return pos;
         }
         return target;
+    }
+
+    private static void drawIcon(GuiGraphics graphics, int level, int x, int y, float alpha) {
+        if (alpha <= 0.02F) {
+            return;
+        }
+        RenderSystem.enableBlend();
+        graphics.setColor(0.25F, 0.25F, 0.25F, alpha);
+        graphics.blitSprite(EDGE_ICONS[level], x + 1, y + 1, 16, 16);
+        graphics.setColor(1.0F, 1.0F, 1.0F, alpha);
+        graphics.blitSprite(EDGE_ICONS[level], x, y, 16, 16);
+        graphics.setColor(1.0F, 1.0F, 1.0F, 1.0F);
+        RenderSystem.disableBlend();
     }
 
 }

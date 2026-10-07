@@ -12,5 +12,19 @@
   "dynamicfelling.configuration.chopReach": "Chop reach",
   "jade.dynamicfelling.swings": "Swings to fell: %s",
   "config.jade.plugin_dynamicfelling.swings_to_fell": "Swings to fell",
-  "dynamicfelling.configuration.showCounter": "Show swing counter"
+  "dynamicfelling.configuration.showCounter": "Show swing counter",
+  "dynamicfelling.configuration.enabled": "Enabled",
+  "item.dynamicfelling.whetstone": "Whetstone",
+  "tooltip.dynamicfelling.edge.keen": "Edge: Keen",
+  "tooltip.dynamicfelling.edge.sharp": "Edge: Sharp",
+  "tooltip.dynamicfelling.edge.worn": "Edge: Worn",
+  "tooltip.dynamicfelling.edge.dull": "Edge: Dull",
+  "dynamicfelling.configuration.keenSwingBonus": "Keen edge swing bonus",
+  "dynamicfelling.configuration.dullSwingPenalty": "Dull edge swing penalty",
+  "dynamicfelling.configuration.edgeWearChance": "Edge wear chance",
+  "dynamicfelling.configuration.edgeWearAmount": "Edge wear amount",
+  "dynamicfelling.configuration.whetstoneRestore": "Whetstone edge restore",
+  "dynamicfelling.configuration.Swing and chop": "Swing and chop settings",
+  "dynamicfelling.configuration.Sharpening": "Axe edge and whetstone settings",
+  "dynamicfelling.configuration.Miscellaneous": "Miscellaneous settings"
 }
