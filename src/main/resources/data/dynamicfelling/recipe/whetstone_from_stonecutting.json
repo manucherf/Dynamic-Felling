@@ -1,5 +1,5 @@
 {
   "type": "minecraft:stonecutting",
-  "ingredient": { "item": "minecraft:smooth_stone" },
+  "ingredient": { "tag": "dynamicfelling:whetstone_stones" },
   "result": { "id": "dynamicfelling:whetstone", "count": 1 }
 }

@@ -1,0 +1,6 @@
+{
+  "values": [
+    "minecraft:smooth_stone",
+    { "id": "#c:stones/smooth", "required": false }
+  ]
+}
