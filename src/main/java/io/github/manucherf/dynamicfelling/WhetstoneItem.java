@@ -1,5 +1,8 @@
 package io.github.manucherf.dynamicfelling;
 
+import net.minecraft.core.particles.ItemParticleOption;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
@@ -11,6 +14,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.UseAnim;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
 
 public class WhetstoneItem extends Item {
     public static final int USE_TICKS = 72000;
@@ -76,6 +80,11 @@ public class WhetstoneItem extends Item {
         float t = cycleTick(getUseDuration(stack, entity) - remaining);
         if (strokeStarts(t, IN_END, SIDE_A_END) || strokeStarts(t, FLIP_END, SIDE_B_END)) {
             level.playSound(null, entity.blockPosition(), SoundEvents.GRINDSTONE_USE, SoundSource.PLAYERS, 0.3F, 1.6F);
+            if (level instanceof ServerLevel server) {
+                Vec3 at = entity.getEyePosition().add(entity.getLookAngle().scale(0.7)).add(0.0, -0.2, 0.0);
+                server.sendParticles(new ItemParticleOption(ParticleTypes.ITEM, stack),
+                        at.x, at.y, at.z, 4, 0.05, 0.05, 0.05, 0.02);
+            }
         }
         if (t == SIDE_B_END) {
             sharpen(entity, stack);
@@ -94,5 +103,20 @@ public class WhetstoneItem extends Item {
 
     public static float cycleTick(float used) {
         return used < IN_END ? used : IN_END + (used - IN_END) % (CYCLE_END - IN_END);
+    }
+
+    //axe flip 3rd person
+    public static float flip(float t) {
+        float f;
+        if (t < SIDE_A_END) {
+            f = 0.0F;
+        } else if (t < FLIP_END) {
+            f = (t - SIDE_A_END) / (FLIP_END - SIDE_A_END);
+        } else if (t < SIDE_B_END) {
+            f = 1.0F;
+        } else {
+            f = 1.0F - (t - SIDE_B_END) / (CYCLE_END - SIDE_B_END);
+        }
+        return f * f * (3.0F - 2.0F * f);
     }
 }

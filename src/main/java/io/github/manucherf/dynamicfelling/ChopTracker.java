@@ -278,9 +278,12 @@ public class ChopTracker {
             int iconX = left ? centre + 34 : centre - 50;
             int low = (int) iconLevel;
             float mix = iconLevel - low;
-            drawIcon(graphics, low, iconX, y - 5, iconAlpha * (1.0F - mix));
+            drawSprite(graphics, 0, iconX, y - 5, iconAlpha, true);
+            if (low > 0) {
+                drawSprite(graphics, low, iconX, y - 5, iconAlpha * (1.0F - mix), false);
+            }
             if (mix > 0.0F) {
-                drawIcon(graphics, low + 1, iconX, y - 5, iconAlpha * mix);
+                drawSprite(graphics, low + 1, iconX, y - 5, iconAlpha * mix, false);
             }
         }
     }
@@ -510,13 +513,15 @@ public class ChopTracker {
         return target;
     }
 
-    private static void drawIcon(GuiGraphics graphics, int level, int x, int y, float alpha) {
+    private static void drawSprite(GuiGraphics graphics, int level, int x, int y, float alpha, boolean shadow) {
         if (alpha <= 0.02F) {
             return;
         }
         RenderSystem.enableBlend();
-        graphics.setColor(0.25F, 0.25F, 0.25F, alpha);
-        graphics.blitSprite(EDGE_ICONS[level], x + 1, y + 1, 16, 16);
+        if (shadow) {
+            graphics.setColor(0.25F, 0.25F, 0.25F, alpha);
+            graphics.blitSprite(EDGE_ICONS[level], x + 1, y + 1, 16, 16);
+        }
         graphics.setColor(1.0F, 1.0F, 1.0F, alpha);
         graphics.blitSprite(EDGE_ICONS[level], x, y, 16, 16);
         graphics.setColor(1.0F, 1.0F, 1.0F, 1.0F);

@@ -11,6 +11,7 @@ import java.util.List;
 public final class FellingConfig {
     public static final ModConfigSpec SPEC;
     public static final ModConfigSpec.ConfigValue<List<? extends String>> EXCLUDED_TOOLS;
+    public static final ModConfigSpec.ConfigValue<List<? extends String>> TIER_OVERRIDES;
     public static final ModConfigSpec.DoubleValue WOODEN_AXE_SWINGS;
     public static final ModConfigSpec.DoubleValue TIER_REDUCTION;
     public static final ModConfigSpec.DoubleValue EFFICIENCY_REDUCTION;
@@ -36,6 +37,12 @@ public final class FellingConfig {
                         "Tools that skip Dynamic Felling and chop the normal way (for example chainsaws).",
                         "Use item IDs like \"somemod:chainsaw\", or item tags with a # like \"#somemod:saws\".")
                 .defineListAllowEmpty("excludedTools", List.of(), () -> "", FellingConfig::isValidEntry);
+        TIER_OVERRIDES = builder
+                .comment(
+                        "Set the tier of specific axes, replacing the one worked out from their material.",
+                        "Format: \"item=tier\", with an item ID or a #tag. Wood/gold 0, stone 1, iron 2, diamond 3, netherite 4. Decimals and values above 4 work.",
+                        "Examples: tfc:metal/axe/copper=1, tfc:metal/axe/bronze=1.5, #c:tools/axes=2")
+                .defineListAllowEmpty("axeTierOverrides", List.of(), () -> "minecraft:wooden_axe=0", FellingConfig::isValidOverride);
 
         builder.comment("Swing and chop settings").push("Swing and chop");
         WOODEN_AXE_SWINGS = builder
@@ -96,16 +103,40 @@ public final class FellingConfig {
     }
 
     public static boolean isExcluded(ItemStack stack) {
-        String itemId = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
         for (String entry : EXCLUDED_TOOLS.get()) {
-            if (entry.startsWith("#")) {
-                if (stack.is(TagKey.create(Registries.ITEM, ResourceLocation.parse(entry.substring(1))))) {
-                    return true;
-                }
-            } else if (entry.equals(itemId)) {
+            if (matches(stack, entry)) {
                 return true;
             }
         }
         return false;
+    }
+
+    public static Float tierOverride(ItemStack stack) {
+        for (String entry : TIER_OVERRIDES.get()) {
+            int split = entry.lastIndexOf('=');
+            if (matches(stack, entry.substring(0, split))) {
+                return Float.parseFloat(entry.substring(split + 1));
+            }
+        }
+        return null;
+    }
+
+    private static boolean matches(ItemStack stack, String entry) {
+        if (entry.startsWith("#")) {
+            return stack.is(TagKey.create(Registries.ITEM, ResourceLocation.parse(entry.substring(1))));
+        }
+        return entry.equals(BuiltInRegistries.ITEM.getKey(stack.getItem()).toString());
+    }
+
+    private static boolean isValidOverride(Object entry) {
+        if (!(entry instanceof String text) || text.lastIndexOf('=') < 1) {
+            return false;
+        }
+        int split = text.lastIndexOf('=');
+        try {
+            return isValidEntry(text.substring(0, split)) && Float.parseFloat(text.substring(split + 1)) >= 0.0F;
+        } catch (NumberFormatException e) {
+            return false;
+        }
     }
 }

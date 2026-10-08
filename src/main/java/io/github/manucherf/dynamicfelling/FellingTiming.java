@@ -121,6 +121,11 @@ public final class FellingTiming {
 
     //Wood/gold 0, stone 1, iron 2, diamond 3, netherite 4.
     private static float tierLevel(ItemStack stack) {
+        //axe tier override
+        Float override = FellingConfig.tierOverride(stack);
+        if (override != null) {
+            return override;
+        }
         //get axe material
         if (!(stack.getItem() instanceof TieredItem tiered)) {
             return 0;

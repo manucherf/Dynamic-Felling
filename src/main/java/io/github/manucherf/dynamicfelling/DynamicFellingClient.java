@@ -35,6 +35,8 @@ public final class DynamicFellingClient {
         NeoForge.EVENT_BUS.addListener(DynamicFellingClient::onTooltip);
         NeoForge.EVENT_BUS.addListener(SharpenHand::onRenderHand);
         //NeoForge.EVENT_BUS.addListener(SharpenHand::onClientTick);
+        SharpenAnimation.register();
+        NeoForge.EVENT_BUS.addListener(SharpenAnimation::onClientTick);
     }
 
     static void onTooltip(ItemTooltipEvent event) {
