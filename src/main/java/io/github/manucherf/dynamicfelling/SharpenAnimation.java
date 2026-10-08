@@ -47,7 +47,8 @@ public final class SharpenAnimation {
             if (layer == null) {
                 continue;
             }
-            boolean sharpening = player.isUsingItem() && player.getUseItem().is(FellingItems.WHETSTONE.get());
+            boolean sharpening = (player.isUsingItem() && player.getUseItem().is(FellingItems.WHETSTONE.get()))
+                    || Grinding.isGrinding(player);
             if (sharpening && !layer.playing) {
                 start(player, layer);
             } else if (!sharpening && layer.playing) {
@@ -61,7 +62,7 @@ public final class SharpenAnimation {
         if (!(PlayerAnimationRegistry.getAnimation(ANIMATION) instanceof KeyframeAnimation animation)) {
             return;
         }
-        float t = WhetstoneItem.cycleTick(player.getTicksUsingItem());
+        float t = WhetstoneItem.cycleTick(WhetstoneItem.usedTicks(player));
         int fade = Math.max(1, Math.round(WhetstoneItem.IN_END - t));
         int offset = Math.max(0, Math.round(t - WhetstoneItem.IN_END));
         layer.playing = true;
@@ -80,7 +81,7 @@ public final class SharpenAnimation {
     }
 
     public static void transformAxe(LivingEntity entity, HumanoidArm arm, PoseStack pose) {
-        float used = entity.getTicksUsingItem() + Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(true);
+        float used = WhetstoneItem.usedTicks(entity) + Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(true);
         float t = WhetstoneItem.cycleTick(used);
         float in = Math.min(1.0F, t / WhetstoneItem.IN_END);
         float side = arm == HumanoidArm.LEFT ? -1.0F : 1.0F;
@@ -101,5 +102,10 @@ public final class SharpenAnimation {
         pose.mulPose(Axis.XP.rotationDegrees(lean));
         pose.mulPose(HANDLE.rotationDegrees(side * 180.0F * flip));
         pose.translate(0.0F, -0.25F, -0.03125F);
+    }
+
+    public static float windIn(LivingEntity entity) {
+        float used = WhetstoneItem.usedTicks(entity) + Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(true);
+        return Math.min(1.0F, WhetstoneItem.cycleTick(used) / WhetstoneItem.IN_END);
     }
 }

@@ -25,5 +25,9 @@ public final class DynamicFelling {
         FellingComponents.COMPONENTS.register(modBus);
         FellingItems.ITEMS.register(modBus);
         modBus.addListener(FellingItems::onCreativeTab);
+        NeoForge.EVENT_BUS.addListener(Grinding::onRightClickBlock);
+        NeoForge.EVENT_BUS.addListener(Grinding::onRightClickItem);
+        NeoForge.EVENT_BUS.addListener(Grinding::onUseStart);
+        NeoForge.EVENT_BUS.addListener(Grinding::onUseTick);
     }
 }

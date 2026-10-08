@@ -78,14 +78,7 @@ public class WhetstoneItem extends Item {
             return;
         }
         float t = cycleTick(getUseDuration(stack, entity) - remaining);
-        if (strokeStarts(t, IN_END, SIDE_A_END) || strokeStarts(t, FLIP_END, SIDE_B_END)) {
-            level.playSound(null, entity.blockPosition(), SoundEvents.GRINDSTONE_USE, SoundSource.PLAYERS, 0.3F, 1.6F);
-            if (level instanceof ServerLevel server) {
-                Vec3 at = entity.getEyePosition().add(entity.getLookAngle().scale(0.7)).add(0.0, -0.2, 0.0);
-                server.sendParticles(new ItemParticleOption(ParticleTypes.ITEM, stack),
-                        at.x, at.y, at.z, 4, 0.05, 0.05, 0.05, 0.02);
-            }
-        }
+        strokeEffects(entity, stack, t);
         if (t == SIDE_B_END) {
             sharpen(entity, stack);
         }
@@ -118,5 +111,23 @@ public class WhetstoneItem extends Item {
             f = 1.0F - (t - SIDE_B_END) / (CYCLE_END - SIDE_B_END);
         }
         return f * f * (3.0F - 2.0F * f);
+    }
+
+    public static boolean strokeEffects(LivingEntity entity, ItemStack stack, float t) {
+        if (strokeStarts(t, IN_END, SIDE_A_END) || strokeStarts(t, FLIP_END, SIDE_B_END)) {
+            entity.level().playSound(null, entity.blockPosition(), SoundEvents.GRINDSTONE_USE, SoundSource.PLAYERS, 0.3F, 1.6F);
+            if (entity.level() instanceof ServerLevel server) {
+                Vec3 at = entity.getEyePosition().add(entity.getLookAngle().scale(0.7)).add(0.0, -0.2, 0.0);
+                server.sendParticles(new ItemParticleOption(ParticleTypes.ITEM, stack),
+                        at.x, at.y, at.z, 4, 0.05, 0.05, 0.05, 0.02);
+            }
+            return true;
+        }
+        return false;
+    }
+
+    //ticks since use started
+    public static int usedTicks(LivingEntity entity) {
+        return USE_TICKS - entity.getUseItemRemainingTicks();
     }
 }

@@ -7,6 +7,7 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.HumanoidArm;
+import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.client.event.RenderHandEvent;
@@ -27,6 +28,10 @@ public final class SharpenHand {
     private static Pose lastAxe;
     private static Pose lastStone;
     private static float releasedAt = -1.0F;
+
+    private static float shrink;
+    private static float lastShrink;
+
 
 
     private record Pose(float x, float y, float z, float lean, float tilt, float twist) {
@@ -77,8 +82,8 @@ public final class SharpenHand {
     private SharpenHand() {}
 
     private static boolean isSharpening(LocalPlayer player) {
-        return player.isUsingItem() && player.getUsedItemHand() == InteractionHand.OFF_HAND
-                && player.getUseItem().is(FellingItems.WHETSTONE.get());
+        return (player.isUsingItem() && player.getUsedItemHand() == InteractionHand.OFF_HAND
+                && player.getUseItem().is(FellingItems.WHETSTONE.get())) || Grinding.isGrinding(player);
     }
 
     static void onRenderHand(RenderHandEvent event) {
@@ -93,13 +98,15 @@ public final class SharpenHand {
         Pose stone;
 
         if (isSharpening(player)) {
-            float used = FREEZE_TICK >= 0.0F ? FREEZE_TICK : player.getTicksUsingItem() + event.getPartialTick();
+            float used = FREEZE_TICK >= 0.0F ? FREEZE_TICK : WhetstoneItem.usedTicks(player) + event.getPartialTick();
             float ticks = WhetstoneItem.cycleTick(used);
 
             axe = axePose(ticks);
             stone = stonePose(ticks);
             lastAxe = axe;
             lastStone = stone;
+            shrink = smooth(ticks / WhetstoneItem.IN_END);
+            lastShrink = shrink;
             releasedAt = -1.0F;
         } else {
             if (lastAxe == null || lastStone == null) {
@@ -118,6 +125,7 @@ public final class SharpenHand {
             }
             axe = lastAxe.lerp(axeHold(), smooth(out));
             stone = lastStone.lerp(stoneHold(), smooth(out));
+            shrink = Mth.lerp(smooth(out), lastShrink, 0.0F);
         }
 
         event.setCanceled(true);
@@ -207,6 +215,11 @@ public final class SharpenHand {
         }
         //from pivot to where the item is drawn
         pose.translate(side * pivotX, pivotY, pivotZ);
+
+        if (stack.getItem() instanceof BlockItem) {
+            float s = Grinding.blockScale(shrink);
+            pose.scale(s, s, s);
+        }
 
         Minecraft.getInstance().getEntityRenderDispatcher().getItemInHandRenderer().renderItem(player, stack,
                 leftHand ? ItemDisplayContext.FIRST_PERSON_LEFT_HAND : ItemDisplayContext.FIRST_PERSON_RIGHT_HAND,
