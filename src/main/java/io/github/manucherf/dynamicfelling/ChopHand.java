@@ -20,7 +20,7 @@ public class ChopHand {
     private static float blend;
     private static float prevBlend;
     private static final int FOLLOW_THROUGH_TICKS = 5;
-    private static final float HOLD_SHARE = 0.7F;
+    static final float HOLD_SHARE = 0.7F;
 
     //one pose as six numbers
     private record AxePose(float x, float y, float z, float lean, float tilt, float twist) {

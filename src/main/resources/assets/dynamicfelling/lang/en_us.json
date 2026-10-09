@@ -27,5 +27,6 @@
   "dynamicfelling.configuration.Swing and chop": "Swing and chop settings",
   "dynamicfelling.configuration.Sharpening": "Axe edge and whetstone settings",
   "dynamicfelling.configuration.Miscellaneous": "Miscellaneous settings",
-  "dynamicfelling.configuration.axeTierOverrides": "Axe tier overrides"
+  "dynamicfelling.configuration.axeTierOverrides": "Axe tier overrides",
+  "tooltip.dynamicfelling.whetstone_hint": "Ground from smooth stone with sand"
 }

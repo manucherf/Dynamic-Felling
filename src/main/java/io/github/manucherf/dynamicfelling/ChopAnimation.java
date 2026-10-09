@@ -14,6 +14,7 @@ import dev.kosmx.playerAnim.minecraftApi.PlayerAnimationRegistry;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.HumanoidArm;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 
@@ -57,13 +58,14 @@ public final class ChopAnimation {
     static void setPace(AbstractClientPlayer player, float pace) {
         ChopLayer layer = layer(player);
         if (layer != null) {
-            layer.speed.speed = pace;
+            layer.pace = pace;
         }
     }
 
     private static final class ChopLayer extends ModifierLayer<IAnimation> {
         private final SpeedModifier speed = new SpeedModifier(1.0F);
         private final MirrorModifier mirror = new MirrorModifier();
+        private float pace = 1.0F;
         private ChopLayer() {
             addModifierBefore(speed);
             addModifierBefore(mirror);
@@ -109,8 +111,30 @@ public final class ChopAnimation {
             if (player != minecraft.player && player.swinging && player.swingTime == 0 && isPlaying(player)) {
                 resync(player);
             }
+            ChopLayer layer = layer(player);
+            if (layer != null && layer.getAnimation() instanceof KeyframeAnimationPlayer anim) {
+                layer.speed.speed = rate(anim.getTick(), layer.pace);
+            }
         }
     }
 
+    //swing full speed, slow tempo stretches rest and hold
+    private static float rate(int tick, float pace) {
+        if (pace >= 1.0F) {
+            return pace;
+        }
+        float s = Mth.positiveModulo(tick - IMPACT_TICK, FellingTiming.TICKS_PER_SWING);
+        float extra = FellingTiming.TICKS_PER_SWING / pace - FellingTiming.TICKS_PER_SWING;
+        if (s < 6.0F) {
+            return 6.0F / (6.0F + extra * (1.0F - ChopHand.HOLD_SHARE));
+        }
+        if (s < 12.0F) {
+            return 1.0F;
+        }
+        if (s < 15.0F) {
+            return 3.0F / (3.0F + extra * ChopHand.HOLD_SHARE);
+        }
+        return 1.0F;
+    }
 
 }

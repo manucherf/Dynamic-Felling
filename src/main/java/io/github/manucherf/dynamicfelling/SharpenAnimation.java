@@ -88,19 +88,20 @@ public final class SharpenAnimation {
         float sec = Math.max(0.0F, t - WhetstoneItem.IN_END) / 20.0F;
 
         float flip = WhetstoneItem.flip(t);
-        float x = Mth.lerp(flip, 0.0F, 0.8F) - 2.0F * Mth.sin(flip * Mth.PI);
+        float x     = Mth.lerp(flip, -0.5F, 0.3F) - 2.0F * Mth.sin(flip * Mth.PI);
         float y     = Mth.lerp(flip, 0.0F, 0.0F);
-        float z     = Mth.lerp(flip, 3.0F, 4.0F);
-        float tip   = Mth.lerp(flip, 35.0F, -25.0F);
-        float swing = Mth.lerp(flip, -12.0F, -5.0F);
+        float z     = Mth.lerp(flip, 1.6F, 2.0F);
+        float tip   = Mth.lerp(flip, 50.0F, 30.0F);
+        float swing = Mth.lerp(flip, 5.0F, 10.0F);
         float lean  = -10.0F * Mth.sin(flip * Mth.PI);
+        float twist = Mth.lerp(flip, 30.0F, 0.0F);
 
         pose.translate(side * x / 16.0F * in, y / 16.0F * in, z / 16.0F * in);
         pose.mulPose(Axis.XP.rotationDegrees(tip * in));
         pose.mulPose(Axis.ZP.rotationDegrees(side * swing * in));
         pose.translate(0.0F, 0.25F, 0.03125F);
         pose.mulPose(Axis.XP.rotationDegrees(lean));
-        pose.mulPose(HANDLE.rotationDegrees(side * 180.0F * flip));
+        pose.mulPose(HANDLE.rotationDegrees(side * (twist * in + 180.0F * flip)));
         pose.translate(0.0F, -0.25F, -0.03125F);
     }
 

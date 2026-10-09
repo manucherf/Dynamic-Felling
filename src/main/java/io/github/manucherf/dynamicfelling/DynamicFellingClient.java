@@ -41,6 +41,9 @@ public final class DynamicFellingClient {
 
     static void onTooltip(ItemTooltipEvent event) {
         ItemStack stack = event.getItemStack();
+        if (stack.is(FellingItems.WHETSTONE.get())) {
+            event.getToolTip().add(Component.translatable("tooltip.dynamicfelling.whetstone_hint").withStyle(ChatFormatting.DARK_GRAY));
+        }
         if (!FellingTiming.canSharpen(stack)) {
             return;
         }
