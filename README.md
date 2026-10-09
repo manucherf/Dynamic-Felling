@@ -4,7 +4,44 @@ Dynamic Felling
 =======
 Dynamic Trees makes trees grow and fall like real trees, but chopping one down doesn't feel very Dynamic™: hold the button and it breaks. Introducing Dynamic Felling! This is a companion mod for Dynamic Trees, and I wanted to add the touch of realism that was missing there, so felling a tree feels like actually chopping it down with an axe.
 
-[CurseForge](https://www.curseforge.com/minecraft/mc-mods/dynamic-felling)
+[CurseForge](https://www.curseforge.com/minecraft/mc-mods/dynamic-felling) / 
+[Modrinth](https://modrinth.com/mod/dynamic-felling)(not approved yet)
+
+<h2>Updates</h2>
+
+<details>
+<summary><b>1.3.0</b>: Sharpening (latest)</summary>
+<ul>
+<li>Axe sharpening implemented: Axes now have an edge that wears down from 100 to 0 as you chop. A keen axe fells trees in 25% less swings, a dull one takes 25% more. The tooltip shows the sharpness of the edge, and a small icon sits next to the swing counter.</li>
+<li> Hold smooth stone in your main hand and six sand in your offhand, then hold right-click to grind the stone into a Whetstone. Works with modded smooth stone and sand (<code>c:stones/smooth</code>, <code>c:sands</code>).</li>
+<li> Hold a whetstone in your offhand and hold right-click to sharpen your axe, adding 25 points to the edge after sharpening each side once. Full animations in first and third person.</li>
+<li> Swing formula adjusted for axe speed. Faster axes now swing faster. Slow axes keep a quick swing but pause longer between hits.</li>
+<li>New config: turn timed felling off entirely (<code>enabled</code>), set an axe's tier by hand (<code>axeTierOverrides</code>), and tune edge wear and whetstone strength.</li>
+</ul>
+</details>
+
+<details>
+<summary><b>1.2.0</b>: Compatibility</summary>
+<ul>
+<li>Falling Leaves and Dynamic Tree Physics support.</li>
+<li>New swing formula and an on-screen swing counter (client config).</li>
+</ul>
+</details>
+
+<details>
+<summary><b>1.1.0</b>: Jade</summary>
+<ul>
+<li>Jade shows the swings left to fell a trunk, live.</li>
+<li>Fixed a camera spin bug.</li>
+</ul>
+</details>
+
+<details>
+<summary><b>1.0.0</b></summary>
+<ul>
+<li>First release.</li>
+</ul>
+</details>
 
 ## Features
 
