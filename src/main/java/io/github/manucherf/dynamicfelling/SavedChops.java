@@ -43,7 +43,7 @@ public class SavedChops {
                 level.destroyBlockProgress(id, entry.center(), -1);
                 entries.remove();
             } else {
-                int stage = Math.min(9, Mth.ceil(entry.hits() * 10.0F / entry.total()) - 1);
+                int stage = stage(level, entry.center());
                 level.destroyBlockProgress(id, entry.center(), stage);
             }
         }
@@ -52,5 +52,14 @@ public class SavedChops {
     private static int crackId(BlockPos center) {
         //give saved trunk negative ID
         return center.hashCode() | Integer.MIN_VALUE;
+    }
+
+    //crack stage drawn for saved hits, -1 for none
+    static int stage(ClientLevel level, BlockPos center) {
+        SavedHitsPayload entry = TRUNKS.get(center);
+        if (entry == null || level.getGameTime() - entry.lastHit() > ChopMemory.FORGET_TICKS) {
+            return -1;
+        }
+        return Math.min(9, Mth.ceil(entry.hits() * 10.0F / entry.total()) - 1);
     }
 }

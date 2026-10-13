@@ -25,6 +25,8 @@ import java.util.UUID;
 public final class FellingNetwork {
     private FellingNetwork() {}
     private static final Map<UUID, Float> CHOPPING = new HashMap<>();
+    //last accepted chop hit per player, in game ticks
+    private static final Map<UUID, Long> LAST_HIT = new HashMap<>();
 
     static void register(RegisterPayloadHandlersEvent event) {
         //packet payload version
@@ -70,6 +72,7 @@ public final class FellingNetwork {
     static void onLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         //remove if quit mid chop
         CHOPPING.remove(event.getEntity().getUUID());
+        LAST_HIT.remove(event.getEntity().getUUID());
         FellingTiming.endServerSession(event.getEntity());
     }
 
@@ -79,13 +82,15 @@ public final class FellingNetwork {
             if (context.player() instanceof ServerPlayer player && CHOPPING.containsKey(player.getUUID())) {
                 ServerLevel level = player.serverLevel();
                 BlockPos trunk = payload.trunk();
+                //ignore hits out of reach or faster than the player can swing
+                if (!player.canInteractWithBlock(trunk, 1.0) || tooSoon(player, level)) {
+                    return;
+                }
 
                 //nearby players hear the chop
                 float size = FellingTiming.trunkSize(level, trunk);
-                float weight = Mth.clamp((size - 0.5F) / 2.5F, 0.0F, 1.0F);
-                float pitch = Math.max(0.7F, 1.0F - 0.15F * (size - 1.0F)) * (0.95F + level.random.nextFloat() * 0.1F);
-                level.playSound(player, trunk, FellingSounds.CHOP.get(), SoundSource.BLOCKS, 0.8F + 0.2F * size, pitch);
-                level.playSound(player, trunk, SoundEvents.ZOMBIE_ATTACK_WOODEN_DOOR, SoundSource.BLOCKS, 0.15F + 0.55F * weight, 0.75F - 0.2F * weight + level.random.nextFloat() * 0.05F);
+                level.playSound(player, trunk, FellingSounds.CHOP.get(), SoundSource.BLOCKS, FellingSounds.chopVolume(size), FellingSounds.chopPitch(size, level.random));
+                level.playSound(player, trunk, SoundEvents.ZOMBIE_ATTACK_WOODEN_DOOR, SoundSource.BLOCKS, FellingSounds.layerVolume(size), FellingSounds.layerPitch(size, level.random));
 
                 //show chips and leaves to players who see the chopper
                 HitResult pick = player.pick(FellingConfig.CHOP_REACH.get(), 1.0F, false);
@@ -101,19 +106,25 @@ public final class FellingNetwork {
                 }
                 PacketDistributor.sendToPlayersTrackingEntity(player, new ChopEffectsPayload(trunk, face, at.toVector3f()));
 
-                if (isRealHit(player, trunk)) {
+                float swings = FellingTiming.swingsToFell(player, level, trunk);
+                if (swings > 0.0F) {
                     AngryBees.onHit(player, trunk);
-                    //work out total
-                    ChopMemory.addHit(level, trunk, FellingTiming.hitsToFell(FellingTiming.swingsToFell(player, level, trunk)));
+                    ChopMemory.addHit(level, trunk, FellingTiming.hitsToFell(swings));
                     FellingTiming.countServerHit(player, trunk);
                 }
             }
         });
     }
 
-    private static boolean isRealHit(ServerPlayer player, BlockPos trunk) {
-        //check if real trunk
-        return player.canInteractWithBlock(trunk, 1.0) && FellingTiming.swingsToFell(player, player.serverLevel(), trunk) > 0;
+    private static boolean tooSoon(ServerPlayer player, ServerLevel level) {
+        long now = level.getGameTime();
+        Long last = LAST_HIT.get(player.getUUID());
+        float gap = FellingTiming.TICKS_PER_SWING / Math.max(0.25F, FellingTiming.pace(player)) * 0.5F;
+        if (last != null && now - last < gap) {
+            return true;
+        }
+        LAST_HIT.put(player.getUUID(), now);
+        return false;
     }
 
     static void onSavedHits(SavedHitsPayload payload, IPayloadContext context) {
@@ -128,6 +139,7 @@ public final class FellingNetwork {
 
     static void onServerStopping(ServerStoppingEvent event) {
         CHOPPING.clear();
+        LAST_HIT.clear();
         FellingTiming.clearServerSessions();
         ChopMemory.clear();
     }

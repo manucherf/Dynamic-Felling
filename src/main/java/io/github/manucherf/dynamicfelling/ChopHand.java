@@ -20,36 +20,27 @@ public class ChopHand {
     private static float blend;
     private static float prevBlend;
     private static final int FOLLOW_THROUGH_TICKS = 5;
-    static final float HOLD_SHARE = 0.7F;
-
-    //one pose as six numbers
-    private record AxePose(float x, float y, float z, float lean, float tilt, float twist) {
-        AxePose lerp(AxePose to, float t) {
-            return new AxePose(Mth.lerp(t, x, to.x), Mth.lerp(t, y, to.y), Mth.lerp(t, z, to.z),
-                    Mth.lerp(t, lean, to.lean), Mth.lerp(t, tilt, to.tilt), Mth.lerp(t, twist, to.twist));
-        }
-    }
 
     //swing made of two poses
-    private record Swing(AxePose hit, AxePose raised) {}
+    private record Swing(HandPose hit, HandPose raised) {}
 
     //vanilla axe as pose
-    private static final AxePose HOLD = new AxePose(0.63F, -0.62F, -0.72F, 0.0F, 0.0F, 0.0F);
+    private static final HandPose HOLD = new HandPose(0.63F, -0.62F, -0.72F, 0.0F, 0.0F, 0.0F);
 
     //list of swings
     private static final Swing[] SWINGS = {
             // high to low
-            new Swing(new AxePose(0.13F, -0.28F, -1.0F, 30.0F, -65.0F, 90.0F),
-                    new AxePose(0.9F, -0.4F, -0.3F, -10.0F, 50.0F, 0.0F)),
+            new Swing(new HandPose(0.13F, -0.28F, -1.0F, 30.0F, -65.0F, 90.0F),
+                    new HandPose(0.9F, -0.4F, -0.3F, -10.0F, 50.0F, 0.0F)),
             // mid to mid
-            new Swing(new AxePose(0.05F, -0.25F, -0.85F, -90.0F, -110.0F, 0.0F),
-                    new AxePose(0.55F, -0.10F, -0.45F, -90.0F, 20.0F, 0.0F)),
+            new Swing(new HandPose(0.05F, -0.25F, -0.85F, -90.0F, -110.0F, 0.0F),
+                    new HandPose(0.55F, -0.10F, -0.45F, -90.0F, 20.0F, 0.0F)),
             // low to high
-            new Swing(new AxePose(0.15F, -0.15F, -0.85F, -110.0F, -110.0F, 0.0F),
-                    new AxePose(0.50F, -0.55F, -0.50F, -130.0F, 20.0F, 0.0F))
+            new Swing(new HandPose(0.15F, -0.15F, -0.85F, -110.0F, -110.0F, 0.0F),
+                    new HandPose(0.50F, -0.55F, -0.50F, -130.0F, 20.0F, 0.0F))
     };
 
-    private static AxePose lastPose = HOLD;
+    private static HandPose lastPose = HOLD;
 
     //get swing from list
     private static Swing swing(int index) {
@@ -61,21 +52,17 @@ public class ChopHand {
         return SWINGS[pick];
     }
 
-    private static AxePose chopPose(float partialTick) {
-        //if (true) return new AxePose(0.05F, -0.25F, -0.85F, -90.0F, -110.0F, 0.0F);//mid hit
-        //if (true) return new AxePose(0.13F, -0.28F, -1.0F, 30.0F, -65.0F, 90.0F);//high to low hit
-        //if (true) return new AxePose(0.15F, -0.15F, -0.85F, -110.0F, -110.0F, 00.0F);//low to high hit
-        //if (true) return new AxePose(0.50F, -0.55F, -0.50F, -130.0F, 20.0F, 0.0F);//low to high raise
+    private static HandPose chopPose(float partialTick) {
         float chopped = ChopTracker.chopTicks(partialTick);
         // until the first downswing, stay raised instead of joining mid pull-back
-        if (chopped < FellingTiming.FIRST_HIT_TICKS - 5.0F) {
+        if (chopped < FellingTiming.FIRST_HIT_TICKS - (FellingTiming.TICKS_PER_SWING - FellingTiming.HOLD_END)) {
             return swing(0).raised();
         }
         float ticks = visualTicks(ChopTracker.swingTicks(partialTick), ChopTracker.pace());
         int hits = Mth.floor((chopped - FellingTiming.FIRST_HIT_TICKS) / FellingTiming.TICKS_PER_SWING) + 1;
         Swing next = swing(hits);
         // resting and pulling back start from the last swing's hit; the downswing ends at the next one's
-        AxePose from = ticks >= 15.0F ? next.hit() : swing(hits - 1).hit();
+        HandPose from = ticks >= FellingTiming.HOLD_END ? next.hit() : swing(hits - 1).hit();
         return from.lerp(next.raised(), lift(ticks));
     }
 
@@ -94,17 +81,16 @@ public class ChopHand {
 
     //lift against ticks
     private static float lift(float ticks) {
-        if (ticks < 6.0F) {
+        if (ticks < FellingTiming.REST_END) {
             return 0.0F;
         }
-        if (ticks < 12.0F) {
-            float t = (ticks - 6.0F) / 6.0F;
-            return t * t * (3.0F - 2.0F * t);
+        if (ticks < FellingTiming.LIFT_END) {
+            return io.github.manucherf.dynamicfelling.HandPose.smooth((ticks - FellingTiming.REST_END) / (FellingTiming.LIFT_END - FellingTiming.REST_END));
         }
-        if (ticks < 15.0F) {
+        if (ticks < FellingTiming.HOLD_END) {
             return 1.0F;
         }
-        float t = (ticks - 15.0F) / 5.0F;
+        float t = (ticks - FellingTiming.HOLD_END) / (FellingTiming.TICKS_PER_SWING - FellingTiming.HOLD_END);
         return 1.0F - t * t;
     }
 
@@ -119,69 +105,29 @@ public class ChopHand {
         boolean right = player.getMainArm() == HumanoidArm.RIGHT;
         float side = right ? 1.0F : -1.0F;
 
-        //if (ChopTracker.isChopping()) {
-        //    float partialTick = event.getPartialTick();
-            // until first downswing, stay raised instead of joining mid pull-back
-        //    if (ChopTracker.chopTicks(partialTick) < FellingTiming.FIRST_HIT_TICKS - 5.0F) {
-        //        lastLift = 1.0F;
-        //    } else {
-        //       lastLift = lift(ChopTracker.swingTicks(partialTick));
-        //    }
-
         if (ChopTracker.isChopping()) {
             lastPose = chopPose(event.getPartialTick());
         } else if (minecraft.level != null && ChopTracker.recentlyCut(minecraft.level.getGameTime(), FOLLOW_THROUGH_TICKS)) {
             //land exactly on final hit,break can come before last frame reaches it
             lastPose = swing(ChopTracker.cutHits() - 1).hit();
         }
-        float mix = amount * amount * (3.0F - 2.0F * amount);
-        AxePose p = HOLD.lerp(lastPose, mix);
-
-
-        //float lift = lastLift;
-        //float mix = amount * amount * (3.0F - 2.0F * amount);
-        //float mix = 0.0F;
-        //float lift = 0.0F;
-        //float lift = 0.0F;
+        float mix = HandPose.smooth(amount);
+        HandPose p = HOLD.lerp(lastPose, mix);
 
         PoseStack pose = event.getPoseStack();
         pose.pushPose();
 
-        //float x = Mth.lerp(mix, 0.63F, Mth.lerp(lift, 0.13F, 0.9F));
-        //float y = Mth.lerp(mix, -0.62F, Mth.lerp(lift, -0.28F, -0.4F));
-        //float z = Mth.lerp(mix, -0.72F, Mth.lerp(lift, -1.0F, -0.30F));
-        //float lean = Mth.lerp(mix, 0.0F, Mth.lerp(lift, 30.0F, -10.0F));
-        //float tilt = Mth.lerp(mix, 0.0F, Mth.lerp(lift, -65.0F, 50.0F));
-        //float twist = Mth.lerp(mix, 0.0F, Mth.lerp(lift, 90.0F, 0.0F));
-
         // where your hands are (x right, y up, z toward you)
         pose.translate(side * p.x(), p.y() + event.getEquipProgress() * -0.6F * (1.0F - mix), p.z());
-        //pose.translate(side * x, y + event.getEquipProgress() * -0.6F * (1.0F - mix), z);
+
 
         // angle of the axe around your hands
         pose.mulPose(Axis.ZP.rotationDegrees(side * p.lean()));
         pose.mulPose(Axis.XP.rotationDegrees(p.tilt()));
         pose.mulPose(Axis.YP.rotationDegrees(side * p.twist()));
-        //pose.mulPose(Axis.ZP.rotationDegrees(side * lean));
-        //pose.mulPose(Axis.XP.rotationDegrees(tilt));
-        //pose.mulPose(Axis.YP.rotationDegrees(side * twist));
 
         // puts the grip of the handle on your hands
         pose.translate(side * -0.07F, 0.10F, 0.0F);
-        //pose.translate(side * -0.07F, 0.10F, 0.0F);
-
-        /*pose.translate(side * Mth.lerp(lift, 0.13F, 0.9F),//left right
-                                 Mth.lerp(lift, -0.28F, -0.4F) + event.getEquipProgress() * -0.6F,//up down
-                                 Mth.lerp(lift, -1.0F, -0.30F));//distance
-        //drawMarker(pose, event);
-
-        // angle of the axe around your hands
-        pose.mulPose(Axis.ZP.rotationDegrees(side * Mth.lerp(lift, 30.0F, -10.0F)));
-        pose.mulPose(Axis.XP.rotationDegrees(Mth.lerp(lift, -65.0F, 70.0F)));
-        pose.mulPose(Axis.YP.rotationDegrees(side * Mth.lerp(lift, 90.0F, 00.0F)));
-
-        // puts the grip of the handle on your hands
-        pose.translate(side * -0.07F, 0.10F, 0.0F);*/
 
         minecraft.getEntityRenderDispatcher().getItemInHandRenderer().renderItem(player, event.getItemStack(),
                 right ? ItemDisplayContext.FIRST_PERSON_RIGHT_HAND : ItemDisplayContext.FIRST_PERSON_LEFT_HAND,
@@ -211,23 +157,25 @@ public class ChopHand {
         if (pace >= 1.0F) {
             return ticks;
         }
+        float liftLength = FellingTiming.LIFT_END - FellingTiming.REST_END;
+        float holdLength = FellingTiming.HOLD_END - FellingTiming.LIFT_END;
         float real = ticks / pace;
-        float extra = (FellingTiming.TICKS_PER_SWING / pace - FellingTiming.TICKS_PER_SWING);// / 2.0F;
-        float rest = 6.0F + extra * (1.0F - HOLD_SHARE);
+        float extra = FellingTiming.TICKS_PER_SWING / pace - FellingTiming.TICKS_PER_SWING;
+        float rest = FellingTiming.REST_END + extra * (1.0F - FellingTiming.HOLD_SHARE);
         if (real < rest) {
-            return real / rest * 6.0F;
+            return real / rest * FellingTiming.REST_END;
         }
         real -= rest;
-        if (real < 6.0F) {
-            return 6.0F + real;
+        if (real < liftLength) {
+            return FellingTiming.REST_END + real;
         }
-        real -= 6.0F;
-        float hold = 3.0F + extra * HOLD_SHARE;
+        real -= liftLength;
+        float hold = holdLength + extra * FellingTiming.HOLD_SHARE;
         if (real < hold) {
-            return 12.0F + real / hold * 3.0F;
+            return FellingTiming.LIFT_END + real / hold * holdLength;
         }
         real -= hold;
-        return Math.min(20.0F, 15.0F + real);
+        return Math.min(FellingTiming.TICKS_PER_SWING, FellingTiming.HOLD_END + real);
     }
 
 }

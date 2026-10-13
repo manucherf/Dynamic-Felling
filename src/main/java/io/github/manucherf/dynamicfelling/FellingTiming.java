@@ -20,6 +20,7 @@ import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 
@@ -31,6 +32,12 @@ import java.util.UUID;
 public final class FellingTiming {
     public static final int FIRST_HIT_TICKS = 11;
     public static final int TICKS_PER_SWING = 20;
+    //swing phases in ticks after a hit
+    public static final float REST_END = 6.0F;
+    public static final float LIFT_END = 12.0F;
+    public static final float HOLD_END = 15.0F;
+    //share of the pause spent holding the axe up
+    public static final float HOLD_SHARE = 0.7F;
     private static final float ONE_BLOCK_RADIUS = 8.0F;
     private static final float NETHERITE_SPEED = 9.0F;
     private static final float SPEED_PER_EXTRA_TIER = 1.0F;
@@ -38,7 +45,7 @@ public final class FellingTiming {
     private static final double FALLEN_DISTANCE_SQR = 16384.0;
     private static final float MAX_PACE = 2.0F;
     private static final TagKey<Item> UNSHARPENABLE = TagKey.create(Registries.ITEM, ResourceLocation.fromNamespaceAndPath(DynamicFelling.MODID, "unsharpenable"));
-    private static final int NEW_EDGE = 100;
+    public static final int MAX_EDGE = 100;
 
     private FellingTiming() {}
 
@@ -56,8 +63,7 @@ public final class FellingTiming {
 
         swings = forFallen(player, pos, swings);
 
-        double slack = state.getBlock() instanceof BranchBlock branch && branch.getRadius(state) > ONE_BLOCK_RADIUS ? 1.5 : 0.0;
-        if (!inChopReach(player, pos, slack)) {
+        if (!trunkInReach(player, pos, state)) {
             event.setNewSpeed(0.0F);
             return;
         }
@@ -84,7 +90,11 @@ public final class FellingTiming {
     }
 
     public static float swingsToFell(Player player, BlockGetter level, BlockPos pos) {
-        return forFallen(player, pos, swingsToFell(player, level.getBlockState(trunkCenter(level, pos))));
+        BlockPos center = trunkCenter(level, pos);
+        if (!isFallen(player, pos) && level.getBlockState(center).getDestroySpeed(level, center) < 0.0F) {
+            return 0.0F;
+        }
+        return forFallen(player, pos, swingsToFell(player, level.getBlockState(center)));
     }
 
     public static int hitsToFell(float swings) {
@@ -193,14 +203,9 @@ public final class FellingTiming {
     }
 
     static boolean inChopReach(Player player, BlockPos pos) {
-        return inChopReach(player, pos, 0.0);
+        BlockPos center = trunkCenter(player.level(), pos);
+        return trunkInReach(player, center, player.level().getBlockState(center));
     }
-
-    static boolean inChopReach(Player player, BlockPos pos, double slack) {
-        double reach = FellingConfig.CHOP_REACH.get() + slack;
-        return player.canInteractWithBlock(pos, reach - player.blockInteractionRange());
-    }
-
 
     //chop session
     private static final class Session {
@@ -224,7 +229,7 @@ public final class FellingTiming {
     }
 
     static void endServerSession(Player player) {
-        Session session = SERVER_SESSIONS.remove(player.getUUID());
+        SERVER_SESSIONS.remove(player.getUUID());
     }
 
     static int savedHits(Player player, BlockPos pos) {
@@ -270,10 +275,9 @@ public final class FellingTiming {
     }
 
     private static float forFallen(Player player, BlockPos pos, float swings) {
-        if (swings <= 0.0F || !SABLE || pos.distToCenterSqr(player.position()) < FALLEN_DISTANCE_SQR) {
+        if (swings <= 0.0F || !isFallen(player, pos)) {
             return swings;
         }
-
         return Math.max(1.0F, swings * FellingConfig.FALLEN_SWINGS.get().floatValue());
     }
 
@@ -318,7 +322,7 @@ public final class FellingTiming {
     }
 
     public static int edge(ItemStack axe) {
-        return axe.getOrDefault(FellingComponents.EDGE.get(), NEW_EDGE);
+        return axe.getOrDefault(FellingComponents.EDGE.get(), MAX_EDGE);
     }
 
     public static int edgeLevel(ItemStack axe) {
@@ -326,4 +330,19 @@ public final class FellingTiming {
         return edge >= 75 ? 3 : edge >= 50 ? 2 : edge >= 25 ? 1 : 0;
     }
 
+    //reach to the trunk's bark, not its center block
+    static boolean trunkInReach(Player player, BlockPos center, BlockState state) {
+        double grow = state.getBlock() instanceof BranchBlock branch ? Math.max(0.0, (branch.getRadius(state) / ONE_BLOCK_RADIUS - 1.0) / 2.0) : 0.0;
+        double reach = FellingConfig.CHOP_REACH.get();
+        //Sable plot space
+        if (isFallen(player, center)) {
+            return player.canInteractWithBlock(center, reach + grow - player.blockInteractionRange());
+        }
+        AABB trunk = new AABB(center).inflate(grow);
+        return trunk.distanceToSqr(player.getEyePosition()) < reach * reach;
+    }
+
+    static boolean isFallen(Player player, BlockPos pos) {
+        return SABLE && pos.distToCenterSqr(player.position()) >= FALLEN_DISTANCE_SQR;
+    }
 }

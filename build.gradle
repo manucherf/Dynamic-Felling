@@ -72,6 +72,7 @@ neoForge {
 
         server {
             server()
+            gameDirectory = project.file('run-server')
             programArgument '--nogui'
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
         }

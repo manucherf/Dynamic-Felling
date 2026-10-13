@@ -5,6 +5,7 @@ import net.neoforged.bus.api.EventPriority;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
+import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import org.slf4j.Logger;
 import net.neoforged.bus.api.IEventBus;
@@ -29,5 +30,7 @@ public final class DynamicFelling {
         NeoForge.EVENT_BUS.addListener(Grinding::onRightClickItem);
         NeoForge.EVENT_BUS.addListener(Grinding::onUseStart);
         NeoForge.EVENT_BUS.addListener(Grinding::onUseTick);
+        modBus.addListener(ModConfigEvent.Loading.class, FellingConfig::onConfigChanged);
+        modBus.addListener(ModConfigEvent.Reloading.class, FellingConfig::onConfigChanged);
     }
 }

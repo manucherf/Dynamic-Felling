@@ -4,7 +4,9 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.neoforge.common.ModConfigSpec;
 import java.util.List;
 
@@ -26,6 +28,24 @@ public final class FellingConfig {
     public static final ModConfigSpec.DoubleValue EDGE_WEAR_CHANCE;
     public static final ModConfigSpec.IntValue WHETSTONE_RESTORE;
     public static final ModConfigSpec.IntValue EDGE_WEAR_AMOUNT;
+
+    //parsed, rebuilt after config load
+    private static List<ItemRule> excluded;
+    private static List<TierRule> tiers;
+
+    private record ItemRule(TagKey<Item> tag, ResourceLocation id) {
+        static ItemRule parse(String entry) {
+            return entry.startsWith("#")
+                    ? new ItemRule(TagKey.create(Registries.ITEM, ResourceLocation.parse(entry.substring(1))), null)
+                    : new ItemRule(null, ResourceLocation.parse(entry));
+        }
+
+        boolean matches(ItemStack stack) {
+            return tag != null ? stack.is(tag) : id.equals(BuiltInRegistries.ITEM.getKey(stack.getItem()));
+        }
+    }
+
+    private record TierRule(ItemRule rule, float tier) {}
 
     static {
         ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
@@ -103,8 +123,11 @@ public final class FellingConfig {
     }
 
     public static boolean isExcluded(ItemStack stack) {
-        for (String entry : EXCLUDED_TOOLS.get()) {
-            if (matches(stack, entry)) {
+        if (excluded == null) {
+            excluded = EXCLUDED_TOOLS.get().stream().map(ItemRule::parse).toList();
+        }
+        for (ItemRule rule : excluded) {
+            if (rule.matches(stack)) {
                 return true;
             }
         }
@@ -112,20 +135,26 @@ public final class FellingConfig {
     }
 
     public static Float tierOverride(ItemStack stack) {
-        for (String entry : TIER_OVERRIDES.get()) {
-            int split = entry.lastIndexOf('=');
-            if (matches(stack, entry.substring(0, split))) {
-                return Float.parseFloat(entry.substring(split + 1));
+        if (tiers == null) {
+            tiers = TIER_OVERRIDES.get().stream().map(entry -> {
+                int split = entry.lastIndexOf('=');
+                return new TierRule(ItemRule.parse(entry.substring(0, split)), Float.parseFloat(entry.substring(split + 1)));
+            }).toList();
+        }
+        for (TierRule tier : tiers) {
+            if (tier.rule().matches(stack)) {
+                return tier.tier();
             }
         }
         return null;
     }
 
-    private static boolean matches(ItemStack stack, String entry) {
-        if (entry.startsWith("#")) {
-            return stack.is(TagKey.create(Registries.ITEM, ResourceLocation.parse(entry.substring(1))));
+    //forget parsed lists for new config
+    static void onConfigChanged(ModConfigEvent event) {
+        if (event.getConfig().getSpec() == SPEC) {
+            excluded = null;
+            tiers = null;
         }
-        return entry.equals(BuiltInRegistries.ITEM.getKey(stack.getItem()).toString());
     }
 
     private static boolean isValidOverride(Object entry) {

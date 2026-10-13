@@ -36,7 +36,7 @@ public class WhetstoneItem extends Item {
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         ItemStack stone = player.getItemInHand(hand);
         ItemStack axe = player.getMainHandItem();
-        if (hand != InteractionHand.OFF_HAND || !FellingTiming.canSharpen(axe) || FellingTiming.edge(axe) >= 100) {
+        if (hand != InteractionHand.OFF_HAND || !FellingTiming.canSharpen(axe) || FellingTiming.edge(axe) >= FellingTiming.MAX_EDGE) {
             return InteractionResultHolder.pass(stone);
         }
         player.startUsingItem(hand);
@@ -55,8 +55,8 @@ public class WhetstoneItem extends Item {
 
     private static void sharpen(LivingEntity entity, ItemStack stone) {
         ItemStack axe = entity.getMainHandItem();
-        if (FellingTiming.canSharpen(axe) && FellingTiming.edge(axe) < 100) {
-            axe.set(FellingComponents.EDGE.get(), Math.min(100, FellingTiming.edge(axe) + FellingConfig.WHETSTONE_RESTORE.get()));
+        if (FellingTiming.canSharpen(axe) && FellingTiming.edge(axe) < FellingTiming.MAX_EDGE) {
+            axe.set(FellingComponents.EDGE.get(), Math.min(FellingTiming.MAX_EDGE, FellingTiming.edge(axe) + FellingConfig.WHETSTONE_RESTORE.get()));
             stone.hurtAndBreak(1, entity, EquipmentSlot.OFFHAND);
         }
     }
@@ -69,7 +69,7 @@ public class WhetstoneItem extends Item {
     @Override
     public void onUseTick(Level level, LivingEntity entity, ItemStack stack, int remaining) {
         ItemStack axe = entity.getMainHandItem();
-        if (!FellingTiming.canSharpen(axe) || FellingTiming.edge(axe) >= 100) {
+        if (!FellingTiming.canSharpen(axe) || FellingTiming.edge(axe) >= FellingTiming.MAX_EDGE) {
             entity.stopUsingItem();
             return;
         }
@@ -110,7 +110,7 @@ public class WhetstoneItem extends Item {
         } else {
             f = 1.0F - (t - SIDE_B_END) / (CYCLE_END - SIDE_B_END);
         }
-        return f * f * (3.0F - 2.0F * f);
+        return HandPose.smooth(f);
     }
 
     public static boolean strokeEffects(LivingEntity entity, ItemStack stack, float t) {

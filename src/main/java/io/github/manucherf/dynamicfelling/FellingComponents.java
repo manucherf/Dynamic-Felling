@@ -13,7 +13,7 @@ public final class FellingComponents {
     //0 dull, 50 normal, 100 keen
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<Integer>> EDGE = COMPONENTS.register("edge",
             () -> DataComponentType.<Integer>builder()
-                    .persistent(Codec.intRange(0, 100))
+                    .persistent(Codec.intRange(0, FellingTiming.MAX_EDGE))
                     .networkSynchronized(ByteBufCodecs.VAR_INT)
                     .build());
 

@@ -125,14 +125,15 @@ public final class ChopAnimation {
         }
         float s = Mth.positiveModulo(tick - IMPACT_TICK, FellingTiming.TICKS_PER_SWING);
         float extra = FellingTiming.TICKS_PER_SWING / pace - FellingTiming.TICKS_PER_SWING;
-        if (s < 6.0F) {
-            return 6.0F / (6.0F + extra * (1.0F - ChopHand.HOLD_SHARE));
+        if (s < FellingTiming.REST_END) {
+            return FellingTiming.REST_END / (FellingTiming.REST_END + extra * (1.0F - FellingTiming.HOLD_SHARE));
         }
-        if (s < 12.0F) {
+        if (s < FellingTiming.LIFT_END) {
             return 1.0F;
         }
-        if (s < 15.0F) {
-            return 3.0F / (3.0F + extra * ChopHand.HOLD_SHARE);
+        if (s < FellingTiming.HOLD_END) {
+            float holdLength = FellingTiming.HOLD_END - FellingTiming.LIFT_END;
+            return holdLength / (holdLength + extra * FellingTiming.HOLD_SHARE);
         }
         return 1.0F;
     }

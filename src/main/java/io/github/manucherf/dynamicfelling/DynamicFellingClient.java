@@ -34,7 +34,6 @@ public final class DynamicFellingClient {
         container.registerConfig(ModConfig.Type.CLIENT, FellingClientConfig.SPEC);
         NeoForge.EVENT_BUS.addListener(DynamicFellingClient::onTooltip);
         NeoForge.EVENT_BUS.addListener(SharpenHand::onRenderHand);
-        //NeoForge.EVENT_BUS.addListener(SharpenHand::onClientTick);
         SharpenAnimation.register();
         NeoForge.EVENT_BUS.addListener(SharpenAnimation::onClientTick);
     }
@@ -47,8 +46,12 @@ public final class DynamicFellingClient {
         if (!FellingTiming.canSharpen(stack)) {
             return;
         }
-        int edge = FellingTiming.edge(stack);
-        String key = edge >= 75 ? "keen" : edge >= 50 ? "sharp" : edge >= 25 ? "worn" : "dull";
+        String key = switch (FellingTiming.edgeLevel(stack)) {
+            case 3 -> "keen";
+            case 2 -> "sharp";
+            case 1 -> "worn";
+            default -> "dull";
+        };
         event.getToolTip().add(Component.translatable("tooltip.dynamicfelling.edge." + key).withStyle(ChatFormatting.GRAY));
     }
 }

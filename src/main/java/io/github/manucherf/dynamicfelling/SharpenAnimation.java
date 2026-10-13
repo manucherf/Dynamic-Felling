@@ -85,7 +85,6 @@ public final class SharpenAnimation {
         float t = WhetstoneItem.cycleTick(used);
         float in = Math.min(1.0F, t / WhetstoneItem.IN_END);
         float side = arm == HumanoidArm.LEFT ? -1.0F : 1.0F;
-        float sec = Math.max(0.0F, t - WhetstoneItem.IN_END) / 20.0F;
 
         float flip = WhetstoneItem.flip(t);
         float x     = Mth.lerp(flip, -0.5F, 0.3F) - 2.0F * Mth.sin(flip * Mth.PI);
